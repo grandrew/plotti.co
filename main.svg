@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="chart" height="150" width="500" viewBox="0 0 500 150" preserveAspectRatio="none">
+<script type="text/javascript" charset="utf-8">
+var stream = new EventSource('http://' + document.domain + ':' + location.port + "/stream")
+xmlns = "http://www.w3.org/2000/svg";
+var old_x = 0;
+var old_y = 0;
+var scaleY = 1.0;
+var tr_x = 0;
+var init_max_y = 1.0;
+var max_y = 0;
+// var height = parseInt(document.firstChild.getAttribute("height"));
+// var width = parseInt(document.firstChild.getAttribute("width"));
+
+var height = 150;
+var width = 500;
+var tr_y = 150; // as height
+var trdn = 0;
+function T(time_half) {
+    document.getElementById("trel").setAttribute("transform", "translate("+tr_x+","+tr_y+") scale(1,"+(-scaleY)+")");
+    document.getElementById("timeMid").innerHTML=parseInt(time_half)+"s";
+}
+
+stream.onmessage = function (e) {
+    var y_data = parseFloat(e.data); // TODO: parse many points 4,5,2;7,6,5
+    if(0 > trdn) {
+        max_y_c = max_y / 2;
+    } else {
+        max_y_c = max_y;
+    }
+    
+    if(Math.abs(y_data) > max_y_c) {
+        var dig=Math.abs(y_data);
+        max_y = (Math.floor(dig/Math.pow(10,Math.floor(Math.log10(dig))))+1)*Math.pow(10,Math.floor(Math.log10(dig))); // TODO: choose max_y as factor of 10, 2, etc.?
+        if(0 > trdn) max_y*=2
+    }
+    if(init_max_y == false) {
+        init_max_y = max_y;
+    }
+    scaleY = init_max_y / max_y;
+    mid_val = max_y/2;
+    mid_val_ex="";
+    if(mid_val >= 1e3) {
+        mid_val /= 1e3;
+        mid_val_ex="k";
+    }
+    if(mid_val >= 1e6) {
+        mid_val /= 1e6;
+        mid_val_ex="M";
+    }
+    if(mid_val >= 1e9) {
+        mid_val /= 1e9;
+        mid_val_ex="G";
+    }
+    if(mid_val > 1) mid_val = Math.round(mid_val * 100) / 100;
+    if(mid_val > 0) mid_val = Math.round(mid_val * 1000) / 1000;
+    document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex;
+    document.getElementById("cur_val").innerHTML="y="+Math.round(y_data * 1000) / 1000;
+    var y = parseInt(y_data / init_max_y * height);
+    var x = old_x + width / 50;
+    // if((-max_y/2) > y_data) {
+    //     max_y *= 2;
+    // }
+    if(0 > y) if (trdn == 0) {
+        trdn = -68;
+        document.getElementById("shift").setAttribute("transform", "translate(0,"+trdn+")");
+    }
+    var pt = old_x+","+old_y+" "+x+","+y;
+    var seconds = new Date().getTime() / 1000;
+    //console.log("adding point " + pt);
+    var el = document.createElementNS(xmlns,"polyline");
+    el.setAttributeNS(null, "points", pt);
+    el.setAttributeNS(null, "class", "data");
+    el.seconds = seconds;
+    el.x = x;
+    old_x = x;
+    old_y = y;
+    tr = document.getElementById("trel");
+    tr.appendChild(el);
+    if(x > 500) {
+        tr_x = -(x-500); 
+        tr.removeChild(tr.childNodes[0]);
+    }
+    
+    time_half = parseFloat(seconds - tr.childNodes[0].seconds) / parseFloat(x - tr.childNodes[0].x) * parseFloat(500) / 2;
+    //console.log(time_half);
+    T(time_half);
+};
+document.onload = function() {
+    
+}
+// TODO: onload set the axis, tr
+</script>
+<style>
+.chart {
+  background: white;
+  /*width: 500px;
+  height: 100px;*/
+  /*border-left: 1px dotted #555;
+  border-bottom: 1px dotted #555;*/
+  padding: 25px 25px 25px 55px;
+}
+
+
+.axis {
+stroke: #000000;
+stroke-width: 1px;
+}
+
+.liner {
+stroke: #000000;
+stroke-width: 1px;
+stroke-dasharray: 1,5;
+}
+
+
+body {
+  /* background: #ccc; */
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+polyline {
+    fill: none;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+.data {
+    stroke: #0074d9;
+}
+
+body, html {
+  height: 100%;
+}
+</style>
+
+<text x="490" y="25" text-anchor="end" id="cur_val" style="font-size: 18px"></text>
+<text x="5" y="25" text-anchor="end" id="msg" style="font-size: 18px"></text>
+
+<g transform="translate(0,0)" id="shift">
+
+<svg class="axis">
+    <polyline points="0,150 500,150"/>
+    <polyline points="250,150 250,146"/>
+    <polyline points="0,0 0,150"/>
+</svg>
+
+<svg class="liner">
+    <polyline points="0,75 500,75"/>
+</svg>
+<text x="-5" y="75" text-anchor="end" id="valueMid" style="font-size: 18px">0.5</text>
+<text x="250" y="170" text-anchor="middle" id="timeMid" style="font-size: 18px">10s</text>
+<text x="-5" y="150" text-anchor="end" id="zeroax" style="font-size: 18px">0</text>
+
+
+<g transform="translate(0,100) scale(1,-1)" id="trel"/>
+</g>
+</svg>
