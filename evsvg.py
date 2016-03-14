@@ -9,12 +9,18 @@ def svg():
 @app.route( '/stream' )
 def stream():
     def read_process():
-        y=0.0
+        y1=0.0
+        y2=0.0
+        y3=0.0
         while True:
             time.sleep(0.2)
-            y+=random.uniform(-0.1, 0.1)
-            if y < -1: y = -1
-            yield "data: %s\n\n" % y 
+            y1+=random.uniform(-0.1, 0.1)
+            y2+=random.uniform(-0.1, 0.1)
+            y3+=random.uniform(-0.1, 0.1)
+            if y1 < 0: y1 = 0
+            if y2 < 0: y2 = 0
+            if y3 < 0: y3 = 0
+            yield "data: %s,%s,%s\n\n" % (y1,y2,y3)
     return flask.Response( read_process(), mimetype= 'text/event-stream')
 
 if __name__ == "__main__":

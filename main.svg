@@ -4,6 +4,7 @@ var stream = new EventSource('http://' + document.domain + ':' + location.port +
 xmlns = "http://www.w3.org/2000/svg";
 var old_x = 0;
 var old_y = 0;
+var l_y = [0,0,0,0,0,0,0,0,0,0];
 var scaleY = 1.0;
 var tr_x = 0;
 var init_max_y = 1.0;
@@ -21,7 +22,30 @@ function T(time_half) {
 }
 
 stream.onmessage = function (e) {
-    var y_data = parseFloat(e.data); // TODO: parse many points 4,5,2;7,6,5
+    tr = document.getElementById("trel");
+    var all_data = e.data.split(",").slice(0, 9);
+    var el = document.createElementNS(xmlns,"g");
+    var x = old_x + width / 50;
+    for(i=0; all_data.length>i;i++) {
+        var pt = gen_pt(i, all_data[i], x);
+        el.appendChild(pt);
+    }
+    var seconds = new Date().getTime() / 1000;
+    el.seconds = seconds;
+    el.xval = x;
+    old_x = x;
+    tr.appendChild(el);
+    if(x > 500) {
+        tr_x = -(x-500); 
+        tr.removeChild(tr.childNodes[0]);
+    }
+    
+    time_half = parseFloat(seconds - tr.childNodes[0].seconds) / parseFloat(x - tr.childNodes[0].xval) * parseFloat(500) / 2;
+    T(time_half);
+}
+
+function gen_pt(i, ydata, x) {
+    var y_data = parseFloat(ydata); // TODO: parse many points 4,5,2;7,6,5
     if(0 > trdn) {
         max_y_c = max_y / 2;
     } else {
@@ -53,38 +77,22 @@ stream.onmessage = function (e) {
     }
     if(mid_val > 1) mid_val = Math.round(mid_val * 100) / 100;
     if(mid_val > 0) mid_val = Math.round(mid_val * 1000) / 1000;
-    document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex;
-    document.getElementById("cur_val").innerHTML="y="+Math.round(y_data * 1000) / 1000;
+    document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex; 
+    document.getElementById("cur_val"+i).innerHTML=Math.round(y_data * 1000) / 1000; // TODO HERE
     var y = parseInt(y_data / init_max_y * height);
-    var x = old_x + width / 50;
-    // if((-max_y/2) > y_data) {
-    //     max_y *= 2;
-    // }
     if(0 > y) if (trdn == 0) {
         trdn = -68;
         document.getElementById("shift").setAttribute("transform", "translate(0,"+trdn+")");
     }
-    var pt = old_x+","+old_y+" "+x+","+y;
-    var seconds = new Date().getTime() / 1000;
+    var pt = old_x+","+l_y[i]+" "+x+","+y;
     //console.log("adding point " + pt);
     var el = document.createElementNS(xmlns,"polyline");
     el.setAttributeNS(null, "points", pt);
-    el.setAttributeNS(null, "class", "data");
-    el.seconds = seconds;
-    el.x = x;
-    old_x = x;
-    old_y = y;
-    tr = document.getElementById("trel");
-    tr.appendChild(el);
-    if(x > 500) {
-        tr_x = -(x-500); 
-        tr.removeChild(tr.childNodes[0]);
-    }
-    
-    time_half = parseFloat(seconds - tr.childNodes[0].seconds) / parseFloat(x - tr.childNodes[0].x) * parseFloat(500) / 2;
-    //console.log(time_half);
-    T(time_half);
-};
+    el.setAttributeNS(null, "class", "src"+i);
+    l_y[i] = y;
+    return el;
+}
+
 document.onload = function() {
     
 }
@@ -97,7 +105,7 @@ document.onload = function() {
   height: 100px;*/
   /*border-left: 1px dotted #555;
   border-bottom: 1px dotted #555;*/
-  padding: 25px 25px 25px 55px;
+  padding: 25px 55px 25px 55px;
 }
 
 
@@ -134,10 +142,75 @@ polyline {
 body, html {
   height: 100%;
 }
+
+.src0 {
+    stroke: #5DA5DA; /* (blue) */
+}
+.src1 {
+    stroke: #F15854; /* (red) */
+}
+.src2 {
+    stroke: #DECF3F; /* (yellow) */
+}
+.src3 {
+    stroke: #B276B2; /* (purple) */
+}
+.src4 {
+    stroke: #B2912F; /* (brown) */
+}
+.src5 {
+    stroke: #F17CB0; /* (pink) */
+}
+.src6 {
+    stroke: #60BD68; /* (green) */
+}
+.src7 {
+    stroke: #FAA43A; /* (orange) */
+}
+.src8 {
+    stroke: #4D4D4D; /* (gray) */
+}
+
+.tsrc0 {
+    fill: #5DA5DA; /* (blue) */
+}
+.tsrc1 {
+    fill: #F15854; /* (red) */
+}
+.tsrc2 {
+    fill: #DECF3F; /* (yellow) */
+}
+.tsrc3 {
+    fill: #B276B2; /* (purple) */
+}
+.tsrc4 {
+    fill: #B2912F; /* (brown) */
+}
+.tsrc5 {
+    fill: #F17CB0; /* (pink) */
+}
+.tsrc6 {
+    fill: #60BD68; /* (green) */
+}
+.tsrc7 {
+    fill: #FAA43A; /* (orange) */
+}
+.tsrc8 {
+    fill: #4D4D4D; /* (gray) */
+}
+
 </style>
 
-<text x="490" y="25" text-anchor="end" id="cur_val" style="font-size: 18px"></text>
-<text x="5" y="25" text-anchor="end" id="msg" style="font-size: 18px"></text>
+<text x="505" y="25" text-anchor="start" id="cur_val0" style="font-size: 18px" class="tsrc0"></text>
+<text x="505" y="45" text-anchor="start" id="cur_val1" style="font-size: 18px" class="tsrc1"></text>
+<text x="505" y="65" text-anchor="start" id="cur_val2" style="font-size: 18px" class="tsrc2"></text>
+<text x="505" y="85" text-anchor="start" id="cur_val3" style="font-size: 18px" class="tsrc3"></text>
+<text x="505" y="105" text-anchor="start" id="cur_val4" style="font-size: 18px" class="tsrc4"></text>
+<text x="505" y="125" text-anchor="start" id="cur_val5" style="font-size: 18px" class="tsrc5"></text>
+<text x="505" y="145" text-anchor="start" id="cur_val6" style="font-size: 18px" class="tsrc6"></text>
+<text x="505" y="165" text-anchor="start" id="cur_val7" style="font-size: 18px" class="tsrc7"></text>
+<text x="505" y="185" text-anchor="start" id="cur_val8" style="font-size: 18px" class="tsrc8"></text>
+<text x="5" y="25" text-anchor="start" id="msg" style="font-size: 18px"></text>
 
 <g transform="translate(0,0)" id="shift">
 
