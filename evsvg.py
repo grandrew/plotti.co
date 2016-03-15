@@ -71,6 +71,6 @@ def stream(hashstr):
 
 if __name__ == "__main__":
     #app.debug = True
-    server = WSGIServer(("", 80), app)
+    server = WSGIServer(("", 80), app, log=None)
     print "serving"
     server.serve_forever()
