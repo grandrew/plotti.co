@@ -1,0 +1,10 @@
+# Site settings
+title: Plottico - the most simple way to create live plots
+tag_text: Plotti.co
+description: Plottico is a web api that generates live plots in SVG images.
+
+# Build settings
+markdown: kramdown
+exclude: ["README.md"]
+sass:
+  style: compressed

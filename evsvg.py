@@ -11,15 +11,22 @@ cache = Cache(app,config={'CACHE_TYPE': 'simple'})
 subscriptions = {}
 lhosts = {}
 
-@app.route( '/svg' )
-def svg():
-    return flask.Response( file('main.svg','r').read(),  mimetype= 'image/svg+xml')
+@cache.cached(timeout=500)
+@app.route( '/css/main.css' )
+def main_css():
+    return flask.Response( file('plotti.co/_site/css/main.css','r').read(),  mimetype= 'text/css')
 
-#@cache.cached(timeout=50)
+@cache.cached(timeout=500)
+@app.route( '/' )
+def index():
+    return flask.Response( file('plotti.co/_site/index.html','r').read(),  mimetype= 'text/html')
+
+@cache.cached(timeout=500)
 @app.route( '/<hashstr>/plot.svg' )
 def plot(hashstr):
     return flask.Response( file('main.svg','r').read(),  mimetype= 'image/svg+xml')
 
+@cache.cached(timeout=500)
 @app.route( '/<hashstr>/<width>x<height>.svg' )
 def plotwh(hashstr,width,height):
     return flask.Response( file('main.svg','r').read().replace('height="210" width="610"', 'height="%s" width="%s"' % (height, width)),  mimetype= 'image/svg+xml')
@@ -63,7 +70,7 @@ def stream(hashstr):
     return flask.Response( send_proc(), mimetype= 'text/event-stream')
 
 if __name__ == "__main__":
-    app.debug = True
+    #app.debug = True
     server = WSGIServer(("", 80), app)
     print "serving"
     server.serve_forever()
