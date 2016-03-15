@@ -1,7 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" class="chart" height="210" width="610" viewBox="0 0 610 210" preserveAspectRatio="none">
 <script type="text/javascript" charset="utf-8">
-var stream = new EventSource('http://' + document.domain + ':' + location.port + "/stream")
+var hashstr = document.location.pathname.split("/")[1]
+var stream = new EventSource('http://' + document.domain + ':' + location.port + "/"+hashstr+"/stream")
 xmlns = "http://www.w3.org/2000/svg";
+
 var old_x = 0;
 var old_y = 0;
 var l_y = [0,0,0,0,0,0,0,0,0,0];
