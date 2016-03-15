@@ -20,7 +20,7 @@ var tr_y = 150; // as height
 var trdn = 0;
 function T(time_half) {
     document.getElementById("trel").setAttribute("transform", "translate("+tr_x+","+tr_y+") scale(1,"+(-scaleY)+")");
-    document.getElementById("timeMid").innerHTML=parseInt(time_half)+"s";
+    if(time_half) document.getElementById("timeMid").innerHTML=parseInt(time_half)+"s";
 }
 
 stream.onmessage = function (e) {
@@ -48,7 +48,7 @@ stream.onmessage = function (e) {
 }
 
 function gen_pt(i, ydata, x) {
-    var y_data = parseFloat(ydata); // TODO: parse many points 4,5,2;7,6,5
+    var y_data = parseFloat(ydata); 
     var txt = ydata.replace(RegExp("[\\d.,]+"),"");
     if(txt.length) {
         document.getElementById("msg").innerHTML=txt;
@@ -92,29 +92,15 @@ function gen_pt(i, ydata, x) {
         document.getElementById("shift").setAttribute("transform", "translate(55,"+trdn+")");
     }
     var pt = old_x+","+l_y[i]+" "+x+","+y;
-    //console.log("adding point " + pt);
     var el = document.createElementNS(xmlns,"polyline");
     el.setAttributeNS(null, "points", pt);
     el.setAttributeNS(null, "class", "src"+i);
     l_y[i] = y;
     return el;
 }
-
-document.onload = function() {
-    tr = document.getElementById("trel");
-    tr.childNodes[0].seconds = new Date().getTime() / 1000;
-    tr.childNodes[0].x=0;
-}
-// TODO: onload set the axis, tr
 </script>
 <style>
 .chart {
-  background: white;
-  /*width: 500px;
-  height: 100px;*/
-  /*border-left: 1px dotted #555;
-  border-bottom: 1px dotted #555;*/
-  /*padding: 25px 55px 25px 55px;*/
 }
 
 
@@ -237,11 +223,6 @@ body, html {
 <text x="-5" y="150" text-anchor="end" id="zeroax" style="font-size: 18px">0</text>
 
 
-<g transform="translate(0,100) scale(1,-1)" id="trel"><g></g></g>
+<g transform="translate(0,100) scale(1,-1)" id="trel"></g>
 </g>
-<script>
-tr = document.getElementById("trel");
-tr.childNodes[0].seconds = new Date().getTime() / 1000;
-tr.childNodes[0].xval=0;
-</script>
 </svg>
