@@ -1,5 +1,6 @@
 import flask, time, random
 from flask import request
+from flask.ext.cache import Cache
 # from pubsub import pub
 # from threadsafepub import pub as tpub
 # from threading import Event, Thread
@@ -8,6 +9,7 @@ from gevent.wsgi import WSGIServer
 from gevent.queue import Queue
 
 app = flask.Flask(__name__)
+cache = Cache(app,config={'CACHE_TYPE': 'simple'})
 
 subscriptions = {}
 
@@ -32,6 +34,7 @@ def svg():
 #             yield "data: %sbps,%s,%s\n\n" % (y1,y2,y3)
 #     return flask.Response( read_process(), mimetype= 'text/event-stream')
 
+#@cache.cached(timeout=50)
 @app.route( '/<hashstr>/plot.svg' )
 def plot(hashstr):
     return flask.Response( file('main.svg','r').read(),  mimetype= 'image/svg+xml')
@@ -39,7 +42,7 @@ def plot(hashstr):
 @app.route('/<hashstr>', methods=['GET'])
 def feeder(hashstr):
     print "send", hashstr, request.args.get('d')
-    if not hashstr in subscriptions: return
+    if not hashstr in subscriptions: return ""
     data = request.args.get('d')
     def notify():
         for sub in subscriptions[hashstr][:]:

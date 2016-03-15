@@ -29,6 +29,7 @@ stream.onmessage = function (e) {
     var el = document.createElementNS(xmlns,"g");
     var x = old_x + width / 50;
     for(i=0; all_data.length>i;i++) {
+        if(all_data[i] == "") continue;
         var pt = gen_pt(i, all_data[i], x);
         el.appendChild(pt);
     }
@@ -100,7 +101,9 @@ function gen_pt(i, ydata, x) {
 }
 
 document.onload = function() {
-    
+    tr = document.getElementById("trel");
+    tr.childNodes[0].seconds = new Date().getTime() / 1000;
+    tr.childNodes[0].x=0;
 }
 // TODO: onload set the axis, tr
 </script>
@@ -234,6 +237,11 @@ body, html {
 <text x="-5" y="150" text-anchor="end" id="zeroax" style="font-size: 18px">0</text>
 
 
-<g transform="translate(0,100) scale(1,-1)" id="trel"/>
+<g transform="translate(0,100) scale(1,-1)" id="trel"><g></g></g>
 </g>
+<script>
+tr = document.getElementById("trel");
+tr.childNodes[0].seconds = new Date().getTime() / 1000;
+tr.childNodes[0].xval=0;
+</script>
 </svg>
