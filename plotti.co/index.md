@@ -6,6 +6,8 @@ layout: default
 
 Live plotting that **just works**.
 
+*DISCLAIMER: this is the first day of service operation and we are experiencing some unexpected loads so be patient if you receive random (recoverable) drops and/or increased latencies*
+
 <br/><object id="live1" data="http://plotti.co/plotti.co/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
 Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that generates live-streaming SVG-image plots to be embedded as an `<object>` tag of your web page. That simple.
@@ -36,6 +38,45 @@ You can try it by clicking here:
 
 <a id="yhref" onclick="feed()">http://plotti.co/YOUR_HASH?d=,,2</a>
 
+## Quick examples
+
+### Server CPU load on plottico
+
+~~~sh
+#!/bin/sh
+while true; do
+wget -O /dev/null -q http://plotti.co/lock/plottycocpu?d=`mpstat -P ALL 1 1 | awk '/Average:/ && $2 ~ /[0-9]/ {print $3}' | sort -r -g | xargs | sed s/\ /,/g`\%cpuload
+done
+~~~
+
+<object data="http://plotti.co/plottycocpu/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+
+### Network load on plottico
+
+~~~sh
+#!/bin/sh
+S=1; F=/sys/class/net/eth0/statistics/tx_bytes
+BPS=999999
+while [ $BPS -gt 10000 ]
+do
+  X=`cat $F`; sleep $S; Y=`cat $F`; BPS="$(((Y-X)/S*8))";
+  wget http://plotti.co/lock/plotticonet?d=${BPS}bps -q -O /dev/null
+done
+~~~
+
+<object data="http://plotti.co/plotticonet/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+
+### Current open connections
+
+~~~sh
+#!/bin/bash
+while true; do
+wget -O /dev/null -q http://plotti.co/lock/plotticonn?d=`netstat -tn | wc -l`sockets
+sleep 1
+done
+~~~
+
+<object data="http://plotti.co/plotticonn/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
 ## Explanation
 
@@ -229,4 +270,15 @@ $(".highlighter-rouge").each(function () {
 
 
 setInterval(pushData, 300);
+</script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-75121462-1', 'auto');
+  ga('send', 'pageview');
+
 </script>

@@ -1,4 +1,4 @@
-import flask, time, random
+import flask, time, random, optparse
 from flask import request
 from flask.ext.cache import Cache
 import gevent
@@ -33,15 +33,26 @@ def plotwh(hashstr,width,height):
 
 @app.route('/lock/<hashstr>', methods=['GET'])
 def lock(hashstr):
+    if request.headers.getlist("X-Forwarded-For"):
+       ip = request.headers.getlist("X-Forwarded-For")[0]
+    else:
+       ip = request.remote_addr
     if not hashstr in lhosts:
-        lhosts[hashstr] = request.remote_addr
+        lhosts[hashstr] = ip
     if not hashstr in subscriptions: return ""
     return feeder(hashstr)
 
 @app.route('/<hashstr>', methods=['GET'])
 def feeder(hashstr):
     if not hashstr in subscriptions: return ""
-    if hashstr in lhosts and request.remote_addr != lhosts[hashstr]: return ""
+    if request.headers.getlist("X-Forwarded-For"):
+       ip = request.headers.getlist("X-Forwarded-For")[0]
+    else:
+       ip = request.remote_addr
+    try:
+        if hashstr in lhosts and ip != lhosts[hashstr]: return ""
+    except KeyError:
+        return ""
     data = request.args.get('d')
     def notify():
         for sub in subscriptions[hashstr][:]:
@@ -57,6 +68,7 @@ def stream(hashstr):
     def send_proc():
         q = Queue()
         if not hashstr in subscriptions:
+            # TODO: race here?
             subscriptions[hashstr] = [q]
         else:
             subscriptions[hashstr].append(q)
@@ -66,11 +78,37 @@ def stream(hashstr):
         finally:
             subscriptions[hashstr].remove(q)
             if len(subscriptions[hashstr]) == 0:
-                del subscriptions[hashstr]
+                try: # race?
+                    del subscriptions[hashstr]
+                except KeyError:
+                    pass
     return flask.Response( send_proc(), mimetype= 'text/event-stream')
 
+def parseOptions():
+    '''
+    parse program parameters
+    '''
+    usage = 'usage: %prog [options]'
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('--port', dest='port', metavar='PORT',
+                      help='listen server port')
+    parser.add_option('--debug', dest='debug', action="store_true",
+                      metavar='DEBUG', help='Debugging state')
+    options, args = parser.parse_args()
+    return options, args, parser
+
 if __name__ == "__main__":
-    #app.debug = True
-    server = WSGIServer(("", 80), app, log=None)
+    opt, args, parser = parseOptions()
+    debug = False
+    port=80
+    if opt.debug is True:
+        debug = True
+    if opt.port:
+        port=int(opt.port)
+    print "Starting on port", port
+
+    app.debug = debug
+    if debug: server = WSGIServer(("", port), app)
+    else: server = WSGIServer(("", port), app, log=None)
     print "serving"
     server.serve_forever()
