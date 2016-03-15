@@ -20,8 +20,8 @@ def stream():
             if y1 < 0: y1 = 0
             if y2 < 0: y2 = 0
             if y3 < 0: y3 = 0
-            yield "data: %s,%s,%s\n\n" % (y1,y2,y3)
+            yield "data: %sbps,%s,%s\n\n" % (y1,y2,y3)
     return flask.Response( read_process(), mimetype= 'text/event-stream')
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True, threaded=True)
+    app.run(host="0.0.0.0", port=80, debug=True, threaded=True)
