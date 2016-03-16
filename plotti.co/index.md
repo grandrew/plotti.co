@@ -6,8 +6,6 @@ layout: default
 
 Live plotting that **just works**.
 
-*DISCLAIMER: this is the first day of service operation and we are experiencing some unexpected loads so be patient if you receive random (recoverable) drops and/or increased latencies*
-
 <br/><object id="live1" data="http://plotti.co/plotti.co/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
 Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that generates live-streaming SVG-image plots to be embedded as an `<object>` tag of your web page. That simple.
@@ -56,9 +54,7 @@ done
 ~~~sh
 #!/bin/sh
 S=1; F=/sys/class/net/eth0/statistics/tx_bytes
-BPS=999999
-while [ $BPS -gt 10000 ]
-do
+while true; do
   X=`cat $F`; sleep $S; Y=`cat $F`; BPS="$(((Y-X)/S*8))";
   wget http://plotti.co/lock/plotticonet?d=${BPS}bps -q -O /dev/null
 done

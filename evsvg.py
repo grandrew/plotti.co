@@ -94,6 +94,8 @@ def parseOptions():
                       help='listen server port')
     parser.add_option('--debug', dest='debug', action="store_true",
                       metavar='DEBUG', help='Debugging state')
+    parser.add_option('--host', dest='host', metavar='HOST',
+                      help='host server address')
     options, args = parser.parse_args()
     return options, args, parser
 
@@ -101,14 +103,17 @@ if __name__ == "__main__":
     opt, args, parser = parseOptions()
     debug = False
     port=80
+    host=""
     if opt.debug is True:
         debug = True
     if opt.port:
         port=int(opt.port)
+    if opt.host:
+        host=opt.host
     print "Starting on port", port
 
     app.debug = debug
-    if debug: server = WSGIServer(("", port), app)
-    else: server = WSGIServer(("", port), app, log=None)
+    if debug: server = WSGIServer((host, port), app)
+    else: server = WSGIServer((host, port), app, log=None)
     print "serving"
     server.serve_forever()
