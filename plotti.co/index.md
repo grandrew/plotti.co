@@ -163,6 +163,21 @@ If you want to lock a single host IP address as a feeder of the data so that no 
 
 HTTPS coming soon.
 
+## Limitations
+
+- Data feed rate is limited to 50 updates/sec per host. Please request if you need more
+- You can not have more than 6 plots streaming in one browser (being worked on)
+- There are some known [bugs](https://github.com/grandrew/plotti.co/issues)
+- Microsoft Edge does not support EventSource yet
+
+## Terms of serve and privacy
+
+The service is provided as-is. Howerver we use our best efforts to make sure the service delivers best possible response times.
+
+There are currenlty no plans to collect any personal information.
+
+These terms are subject to change. Please follow me on [twitter](http://twitter.com/andrew_vrayo) to be notified of any planned changes.
+
 ## Pricing
 
 Plotti.co microservice is free of charge; but if you like it and want to continue using on a regular basis please consider donating to support development and service uptime.

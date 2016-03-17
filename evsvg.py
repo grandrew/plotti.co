@@ -51,7 +51,7 @@ def lock(hashstr):
     if not hashstr in subscriptions: return ""
     return feeder(hashstr)
 
-@limiter.limit("10 per second")
+@limiter.limit("50 per second")
 @app.route('/<hashstr>', methods=['GET'])
 def feeder(hashstr):
     if not hashstr in subscriptions: return ""
