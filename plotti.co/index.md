@@ -80,6 +80,8 @@ done
 
 <object data="http://plotti.co/plotticonn" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
+More examples in the [wiki](https://github.com/grandrew/plotti.co/wiki/Cool-usage-examples)
+
 ## Explanation
 
 To feed some data into the stream, you just create a `GET` request of the following form:
