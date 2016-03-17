@@ -54,6 +54,9 @@ def lock(hashstr):
 @limiter.limit("50 per second")
 @app.route('/<hashstr>', methods=['GET'])
 def feeder(hashstr):
+    data = request.args.get('d')
+    if not data:
+        return plot(hashstr)
     if not hashstr in subscriptions: return ""
     if request.headers.getlist("X-Forwarded-For"):
        ip = request.headers.getlist("X-Forwarded-For")[0]
@@ -63,7 +66,6 @@ def feeder(hashstr):
         if hashstr in lhosts and ip != lhosts[hashstr]: return ""
     except KeyError:
         return ""
-    data = request.args.get('d')
     def notify():
         for sub in subscriptions[hashstr][:]:
             sub.put(data)

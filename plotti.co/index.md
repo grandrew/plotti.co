@@ -201,7 +201,7 @@ The recommended donations are
 
 ## Roadmap
 
-The features on the roadmap include storing some points in advance to be able to serve meaningful up-to-date plots in `<img>` tags, https, more interaction, more types of plots (pie,log,hist,gauges), more beauty, etc.
+The features on the roadmap include storing some points in advance to be able to serve meaningful up-to-date plots in `<img>` tags, [https](https://github.com/grandrew/plotti.co/issues/4), more interaction, [more types of plots (pie,log,hist,gauges)](https://github.com/grandrew/plotti.co/issues/6), more beauty, etc.
 
 Keep updated with [github](https://github.com/grandrew/plotti.co) issues!
 
