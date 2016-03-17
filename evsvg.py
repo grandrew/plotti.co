@@ -32,12 +32,14 @@ def index():
 @cache.cached(timeout=500)
 @app.route( '/<hashstr>/plot.svg' )
 def plot(hashstr):
-    return flask.Response( file('main.svg','r').read(),  mimetype= 'image/svg+xml')
+    return plotwh(hashstr,0,0)
 
 @cache.cached(timeout=500)
 @app.route( '/<hashstr>/<width>x<height>.svg' )
 def plotwh(hashstr,width,height):
-    return flask.Response( file('main.svg','r').read().replace('height="210" width="610"', 'height="%s" width="%s"' % (height, width)),  mimetype= 'image/svg+xml')
+    svg = file('main.svg','r').read()
+    if width and height: svg = svg.replace('height="210" width="610"', 'height="%s" width="%s"' % (height, width))
+    return flask.Response(svg,  mimetype= 'image/svg+xml')
 
 @limiter.limit("10 per second")
 @app.route('/lock/<hashstr>', methods=['GET'])
