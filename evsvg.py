@@ -13,7 +13,6 @@ cache = Cache(app,config={'CACHE_TYPE': 'simple'})
 limiter = Limiter(
     app,
     key_func=get_remote_address,
-    #global_limits=["200 per day", "50 per hour"])
 )
 
 subscriptions = {}
@@ -41,7 +40,7 @@ def plotwh(hashstr,width,height):
     if width and height: svg = svg.replace('height="210" width="610"', 'height="%s" width="%s"' % (height, width))
     return flask.Response(svg,  mimetype= 'image/svg+xml')
 
-@limiter.limit("10 per second")
+@limiter.limit("50 per second")
 @app.route('/lock/<hashstr>', methods=['GET'])
 def lock(hashstr):
     if request.headers.getlist("X-Forwarded-For"):
