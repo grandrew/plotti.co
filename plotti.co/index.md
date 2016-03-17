@@ -20,21 +20,21 @@ Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that g
 To include a live plot on your webpage, you just need to put in an SVG image:
 
 ~~~html
-<object data="http://plotti.co/YOUR_HASH/plot.svg" type="image/svg+xml"></object>
+<object data="http://PLOT_DOMAIN/YOUR_HASH/plot.svg" type="image/svg+xml"></object>
 ~~~
 
 where `YOUR_HASH` is the hash you chose for your stream. We will use it in the following example to feed the data.
 
 here it is:
 
-<object id="yhimg" data="http://plotti.co/YOUR_HASH/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+<object id="yhimg" data="http://PLOT_DOMAIN/YOUR_HASH/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
 
 ### Feeding the data to the image
 
 You can try it by clicking here:
 
-<a id="yhref" onclick="feed()">http://plotti.co/YOUR_HASH?d=,,2</a>
+<a id="yhref" onclick="feed()">http://PLOT_DOMAIN/YOUR_HASH?d=,,2</a>
 
 ## Quick examples
 
@@ -79,10 +79,10 @@ done
 To feed some data into the stream, you just create a `GET` request of the following form:
 
 ~~~sh
-$ wget "http://plotti.co/YOUR_HASH?d=1.5,3.6,7.8mbps" -O /dev/null
+$ wget "http://PLOT_DOMAIN/YOUR_HASH?d=1.5,3.6,7.8mbps" -O /dev/null
 ~~~
 
-the format of the request is 
+the format of the request is
 
 ~~~
 ?d=[value_red],[value_blue],...
@@ -95,7 +95,7 @@ Where each `[value_X]` is a separate line drawn on the plot. You may optionally 
 You can specify image size that you want your SVG to advertise:
 
 ~~~html
-<object data="http://plotti.co/YOUR_HASH/WIDTHxHEIGHT.svg" type="image/svg+xml"></object>
+<object data="http://PLOT_DOMAIN/YOUR_HASH/WIDTHxHEIGHT.svg" type="image/svg+xml"></object>
 ~~~
 
 where `WIDTH` and `HEIGHT` are width and height of the image respectively. Using a specified size makes any styling in the embedding document unnessessary.
@@ -134,7 +134,7 @@ The microservice supports up to 9 inputs, each can be omitted at any time and ea
 }
 ~~~
 
-for example, to use color `green` you only provide the 7th input: <a id="yhref2" onclick="feed2()">http://plotti.co/YOUR_HASH?d=,,,,,,1.0</a>
+for example, to use color `green` you only provide the 7th input: <a id="yhref2" onclick="feed2()">http://PLOT_DOMAIN/YOUR_HASH?d=,,,,,,1.0</a>
 
 ### No OBJECT tag
 
@@ -146,7 +146,7 @@ window.addEventListener("load", function load(event) {
     var limg=document.getElementsByTagName("IMG");
     for(var il=0;il<limg.length;il++) {
         var s=limg[il].getAttribute("src");
-        if(s.startsWith("http://plotti.co/")) {
+        if(s.startsWith("http://" + location.host + "/")) {
             limg[il].outerHTML='<object data="'+s+'" type="image/svg+xml"></object>';
         }
     }
@@ -157,7 +157,7 @@ window.addEventListener("load", function load(event) {
 
 ### Locking the single feeder
 
-If you want to lock a single host IP address as a feeder of the data so that no other IP can send to your hash - you can use the path `http://plotti.co/lock/YOUR_HASH?d=1,2,3`. After executing this request the sender will be locked for this hash. The hash locks get dropped eventually, so keep using this address to continue holding the lock.
+If you want to lock a single host IP address as a feeder of the data so that no other IP can send to your hash - you can use the path `http://PLOT_DOMAIN/lock/YOUR_HASH?d=1,2,3`. After executing this request the sender will be locked for this hash. The hash locks get dropped eventually, so keep using this address to continue holding the lock.
 
 ### HTTPS
 
@@ -182,7 +182,7 @@ These terms are subject to change. Please follow me on [twitter](http://twitter.
 
 Plotti.co microservice is free of charge; but if you like it and want to continue using on a regular basis please consider donating to support development and service uptime.
 
-The recommended donations are 
+The recommended donations are
 
  - $0.50 per month to show your interest in continued development and features
  - $3 per month if you estimate to have 100 clients watching the stream during the month
@@ -221,7 +221,7 @@ You can send any feedback and suggestions to ag@vrayo.com or realgrandrew@gmail.
 
 <script>
 my_hash=Math.random()*100000000;
-document.getElementById("live1").setAttribute("data", "http://plotti.co/"+my_hash+"/plot.svg");
+document.getElementById("live1").setAttribute("data", "http://" + location.host + "/" +my_hash+"/plot.svg");
 y1=0
 y2=0
 y3=0
@@ -233,7 +233,7 @@ function pushData() {
     if(y2<0)y2=0;
     if(y3<0)y3=0;
     var myImage = new Image(1, 1);
-    myImage.src = "http://plotti.co/"+my_hash+"?d="+y1+"rand,"+y2+","+y3;
+    myImage.src = "http://" + location.host + "/" + my_hash+"?d="+y1+"rand,"+y2+","+y3;
     //console.log(myImage);
 }
 function makeid()
@@ -249,36 +249,30 @@ function makeid()
 YH = makeid();
 
 function feed() {
-       
+
 }
 
-document.getElementById("yhimg").setAttribute("data", "http://plotti.co/"+YH+"/plot.svg");
-document.getElementById("yhref").innerHTML="http://plotti.co/"+YH+"?d=,,2";
-document.getElementById("yhref2").innerHTML="http://plotti.co/"+YH+"?d=,,,,,,1.0";
+document.getElementById("yhimg").setAttribute("data", "http://" + location.host + "/"+YH+"/plot.svg");
+document.getElementById("yhref").innerHTML="http://" + location.host + "/"+YH+"?d=,,2";
+document.getElementById("yhref2").innerHTML="http://" + location.host + "/"+YH+"?d=,,,,,,1.0";
 function feed() {
     var myImage = new Image(1, 1);
-    myImage.src = "http://plotti.co/"+YH+"?d=,,2&h="+makeid();
+    myImage.src = "http://" + location.host + "/"+YH+"?d=,,2&h="+makeid();
     //console.log(myImage);
     return false;
 }
 
 function feed2() {
     var myImage = new Image(1, 1);
-    myImage.src = "http://plotti.co/"+YH+"?d=,,,,,,1.0&h="+makeid();
+    myImage.src = "http://" + location.host + "/"+YH+"?d=,,,,,,1.0&h="+makeid();
     //console.log(myImage);
     return false;
 }
 
-$(".s").each(function () {
-    $(this).html( $(this).html().replace("YOUR_HASH", YH) );
+
+$("object,.code,code").each(function () {
+    $(this).html( $(this).html().replace("YOUR_HASH", YH).replace("PLOT_DOMAIN", location.host) );
 });
-
-$(".highlighter-rouge").each(function () {
-    $(this).html( $(this).html().replace("YOUR_HASH", YH) );
-});
-
-
-
 
 setInterval(pushData, 300);
 </script>
