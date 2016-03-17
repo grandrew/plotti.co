@@ -32,6 +32,12 @@ here it is:
 
 ### Feeding the data to the image
 
+Just a simple GET to the same hash with an argument `d`:
+
+~~~
+http://plotti.co/YOUR_HASH?d=<value>,<value>,...
+~~~
+
 You can try it by clicking here:
 
 <a id="yhref" onclick="feed()">http://plotti.co/YOUR_HASH?d=,,2</a>
