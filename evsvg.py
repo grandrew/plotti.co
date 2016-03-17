@@ -4,9 +4,17 @@ from flask.ext.cache import Cache
 import gevent
 from gevent.wsgi import WSGIServer
 from gevent.queue import Queue
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = flask.Flask(__name__)
 cache = Cache(app,config={'CACHE_TYPE': 'simple'})
+
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    #global_limits=["200 per day", "50 per hour"])
+)
 
 subscriptions = {}
 lhosts = {}
@@ -31,6 +39,7 @@ def plot(hashstr):
 def plotwh(hashstr,width,height):
     return flask.Response( file('main.svg','r').read().replace('height="210" width="610"', 'height="%s" width="%s"' % (height, width)),  mimetype= 'image/svg+xml')
 
+@limiter.limit("10 per second")
 @app.route('/lock/<hashstr>', methods=['GET'])
 def lock(hashstr):
     if request.headers.getlist("X-Forwarded-For"):
@@ -42,6 +51,7 @@ def lock(hashstr):
     if not hashstr in subscriptions: return ""
     return feeder(hashstr)
 
+@limiter.limit("10 per second")
 @app.route('/<hashstr>', methods=['GET'])
 def feeder(hashstr):
     if not hashstr in subscriptions: return ""
