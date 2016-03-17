@@ -9,7 +9,7 @@ var old_y = 0;
 var l_y = [0,0,0,0,0,0,0,0,0,0];
 var scaleY = 1.0;
 var tr_x = 0;
-var init_max_y = 1.0;
+var init_max_y = false;
 var max_y = 0;
 
 var height = 150;
@@ -67,19 +67,8 @@ function gen_pt(i, ydata, x) {
     }
     scaleY = init_max_y / max_y;
     mid_val = max_y/2;
-    mid_val_ex="";
-    if(mid_val >= 1e3) {
-        mid_val /= 1e3;
-        mid_val_ex="k";
-    }
-    if(mid_val >= 1e6) {
-        mid_val /= 1e6;
-        mid_val_ex="M";
-    }
-    if(mid_val >= 1e9) {
-        mid_val /= 1e9;
-        mid_val_ex="G";
-    }
+    for(mid_idx=0;mid_val >= 1e3;mid_idx++) mid_val /= 1e3;
+    mid_val_ex = ["","k","M","G","T","e"][mid_idx];
     if(mid_val > 1) mid_val = Math.round(mid_val * 100) / 100;
     if(mid_val > 0) mid_val = Math.round(mid_val * 1000) / 1000;
     document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex; 
