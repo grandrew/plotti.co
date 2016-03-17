@@ -6,6 +6,7 @@ from gevent.wsgi import WSGIServer
 from gevent.queue import Queue
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from os import listdir
 
 app = flask.Flask(__name__)
 cache = Cache(app,config={'CACHE_TYPE': 'simple'})
@@ -18,6 +19,7 @@ limiter = Limiter(
 
 subscriptions = {}
 lhosts = {}
+templates = map(lambda x: x.replace('.svg', ''), listdir('templates'))
 
 @cache.cached(timeout=500)
 @app.route( '/css/main.css' )
@@ -30,14 +32,18 @@ def index():
     return flask.Response( file('plotti.co/_site/index.html','r').read(),  mimetype= 'text/html')
 
 @cache.cached(timeout=500)
-@app.route( '/<hashstr>/plot.svg' )
-def plot(hashstr):
-    return flask.Response( file('main.svg','r').read(),  mimetype= 'image/svg+xml')
+@app.route( '/<hashstr>/<plotname>.svg' )
+def plot(hashstr, plotname):
+    if not plotname in templates:
+        plotname = "main"
+    return flask.Response( file('templates/%s.svg' % plotname,'r').read(),  mimetype= 'image/svg+xml')
 
 @cache.cached(timeout=500)
 @app.route( '/<hashstr>/<width>x<height>.svg' )
 def plotwh(hashstr,width,height):
-    return flask.Response( file('main.svg','r').read().replace('height="210" width="610"', 'height="%s" width="%s"' % (height, width)),  mimetype= 'image/svg+xml')
+    if not plotname in templates:
+        plotname = "main"
+    return flask.Response( file('templates/%s.svg' % plotname,'r').read().replace('height="210" width="610"', 'height="%s" width="%s"' % (height, width)),  mimetype= 'image/svg+xml')
 
 @limiter.limit("10 per second")
 @app.route('/lock/<hashstr>', methods=['GET'])
@@ -72,7 +78,7 @@ def feeder(hashstr):
 
 
 
-    
+
 @app.route('/<hashstr>/stream', methods=['GET'])
 def stream(hashstr):
     def send_proc():
