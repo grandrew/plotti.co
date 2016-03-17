@@ -14,7 +14,7 @@ var max_y = 0;
 
 var height = 150;
 var width = 500;
-var tr_y = 150; 
+var tr_y = 150;
 var trdn = 0;
 function T(time_half) {
     document.getElementById("trel").setAttribute("transform", "translate("+tr_x+","+tr_y+") scale(1,"+(-scaleY)+")");
@@ -37,16 +37,16 @@ stream.onmessage = function (e) {
     old_x = x;
     tr.appendChild(el);
     if(x > 500) {
-        tr_x = -(x-500); 
+        tr_x = -(x-500);
         tr.removeChild(tr.childNodes[0]);
     }
-    
+
     time_half = parseFloat(seconds - tr.childNodes[0].seconds) / parseFloat(x - tr.childNodes[0].xval) * parseFloat(500) / 2;
     T(time_half);
 }
 
 function gen_pt(i, ydata, x) {
-    var y_data = parseFloat(ydata); 
+    var y_data = parseFloat(ydata);
     var txt = ydata.replace(RegExp("[\\d.,]+"),"");
     if(txt.length) {
         document.getElementById("msg").innerHTML=txt;
@@ -56,10 +56,10 @@ function gen_pt(i, ydata, x) {
     } else {
         max_y_c = max_y;
     }
-    
+
     if(Math.abs(y_data) > max_y_c) {
         var dig=Math.abs(y_data);
-        max_y = (Math.floor(dig/Math.pow(10,Math.floor(Math.log10(dig))))+1)*Math.pow(10,Math.floor(Math.log10(dig))); 
+        max_y = (Math.floor(dig/Math.pow(10,Math.floor(Math.log10(dig))))+1)*Math.pow(10,Math.floor(Math.log10(dig)));
         if(0 > trdn) max_y*=2
     }
     if(init_max_y == false) {
@@ -68,21 +68,28 @@ function gen_pt(i, ydata, x) {
     scaleY = init_max_y / max_y;
     mid_val = max_y/2;
     mid_val_ex="";
-    if(mid_val >= 1e3) {
-        mid_val /= 1e3;
-        mid_val_ex="k";
+    if (mid_val >= 1e12) {
+        var order = Math.floor(Math.log10(mid_val));
+        mid_val /= Math.pow(10, order);
+        mid_val_ex="e" + order;
+        console.log(mid_val);
+        console.log(order);
     }
-    if(mid_val >= 1e6) {
-        mid_val /= 1e6;
-        mid_val_ex="M";
-    }
-    if(mid_val >= 1e9) {
+    else if(mid_val >= 1e9) {
         mid_val /= 1e9;
         mid_val_ex="G";
     }
+    else if(mid_val >= 1e6) {
+        mid_val /= 1e6;
+        mid_val_ex="M";
+    }
+    else if(mid_val >= 1e3) {
+        mid_val /= 1e3;
+        mid_val_ex="k";
+    }
     if(mid_val > 1) mid_val = Math.round(mid_val * 100) / 100;
     if(mid_val > 0) mid_val = Math.round(mid_val * 1000) / 1000;
-    document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex; 
+    document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex;
     var y = parseInt(y_data / init_max_y * height);
     if(0 > y) if (trdn == 0) {
         trdn = -68+20;
