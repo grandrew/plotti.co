@@ -6,7 +6,7 @@ layout: default
 
 Live plotting that **just works**.
 
-<br/><object id="live1" data="http://plotti.co/plotti.co/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+<br/><object id="live1" data="http://plotti.co/plotti.co/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"/>
 
 Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that generates live-streaming SVG-image plots to be embedded as an `<object>` tag of your web page. That simple.
 
@@ -20,7 +20,7 @@ Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that g
 To include a live plot on your webpage, you just need to put in an SVG image:
 
 ~~~html
-<object data="http://plotti.co/YOUR_HASH/plot.svg" type="image/svg+xml"></object>
+<object data="http://plotti.co/YOUR_HASH" type="image/svg+xml"/>
 ~~~
 
 where `YOUR_HASH` is the hash you chose for your stream. We will use it in the following example to feed the data.
@@ -47,7 +47,7 @@ wget -O /dev/null -q http://plotti.co/lock/plottycocpu?d=`mpstat -P ALL 1 1 | aw
 done
 ~~~
 
-<object data="http://plotti.co/plottycocpu/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+<object data="http://plotti.co/plottycocpu" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
 ### Network load on plottico
 
@@ -60,7 +60,7 @@ while true; do
 done
 ~~~
 
-<object data="http://plotti.co/plotticonet/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+<object data="http://plotti.co/plotticonet" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
 ### Current open connections
 
@@ -72,7 +72,7 @@ sleep 1
 done
 ~~~
 
-<object data="http://plotti.co/plotticonn/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+<object data="http://plotti.co/plotticonn" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
 ## Explanation
 
