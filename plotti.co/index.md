@@ -159,7 +159,7 @@ HTTPS coming soon.
 
 - Data feed rate is limited to 50 updates/sec per host. Please request if you need more
 - Your cached data will be deleted after 1 hour of idling (no updates or views)
-- The server is stateless and will drop locks and cached data on restart ([fixing asap](https://github.com/grandrew/plotti.co/issues/14))
+- The server is stateless and will drop locks on restart ([fixing asap](https://github.com/grandrew/plotti.co/issues/14))
 - You can not have more than 6 plots streaming in one browser (working on it)
 - There are some known [bugs](https://github.com/grandrew/plotti.co/issues)
 - Microsoft Edge does not support EventSource [yet](http://caniuse.com/#search=EventSource)

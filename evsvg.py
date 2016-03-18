@@ -1,4 +1,4 @@
-import flask, time, random, optparse, collections, string, re, marshal, signal
+import flask, time, random, optparse, collections, string, re, signal, json
 import math as Math
 from flask import request
 from flask.ext.cache import Cache
@@ -24,10 +24,26 @@ global value_cache
 global server
 value_cache = collections.OrderedDict()
 
+def dump_cache():
+    d={}
+    for k in value_cache:
+        d[k]={}
+        d[k]["value"] = list(value_cache[k])
+        d[k]["ts"] = value_cache[k].ts
+    json.dump(d, file("/var/spool/plottico_datacache.json",'w'))
+
+def load_cache():
+    global value_cache
+    j = json.load(file("/var/spool/plottico_datacache.json"))
+    for k in j:
+        e = ExpiringDeque(j[k]["value"])
+        e.ts = j[k]["ts"]
+        value_cache[k] = e
+
+
 class ExpiringDeque(collections.deque):
-    def __init__(self, data):
-        super(ExpiringDeque, self).__init__(maxlen=50)
-        self.append(data)
+    def __init__(self, d=[]):
+        super(ExpiringDeque, self).__init__(d, maxlen=50)
         self.ts = time.time()
     def is_expired(self):
         if time.time() - self.ts > VALUE_CACHE_MAXAGE:
@@ -198,7 +214,8 @@ def feeder(hashstr):
     if len(data) > 1024:
         return "" # TODO: return data error code
     if not hashstr in value_cache:
-        value_cache[hashstr] = ExpiringDeque((data, time.time()));
+        value_cache[hashstr] = ExpiringDeque()
+        value_cache[hashstr].append((data, time.time()));
     else:
         value_cache[hashstr].append((data,int(time.time())))
         value_cache[hashstr].update()
@@ -261,7 +278,8 @@ def shutdown():
     print('Shutting down ...')
     server.stop(timeout=2)
     print('Saving state ...')
-    marshal.dump(file("/var/spool/plottico_datacache.marshal",'w'), value_cache)
+    dump_cache()
+    #dill.dump(value_cache, file("/var/spool/plottico_datacache.dat",'w'))
     #exit(signal.SIGTERM)
 
 gevent.signal(signal.SIGTERM, shutdown)
@@ -280,9 +298,9 @@ if __name__ == "__main__":
         host=opt.host
     
     try:
-        f = file("/var/spool/plottico_datacache.marshal")
+        f = file("/var/spool/plottico_datacache.json")
         print "Loading value cache..."
-        value_cache = marshal.load(f)
+        load_cache()
     except IOError:
         pass
         
