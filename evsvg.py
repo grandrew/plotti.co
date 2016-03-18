@@ -1,4 +1,4 @@
-import flask, time, random, optparse, collections, string, re
+import flask, time, random, optparse, collections, string, re, marshal, signal
 import math as Math
 from flask import request
 from flask.ext.cache import Cache
@@ -8,7 +8,7 @@ from gevent.queue import Queue
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-VALUE_CACHE_MAXAGE = 600
+VALUE_CACHE_MAXAGE = 4000
 
 app = flask.Flask(__name__)
 cache = Cache(app,config={'CACHE_TYPE': 'simple'})
@@ -20,6 +20,8 @@ limiter = Limiter(
 
 subscriptions = {}
 lhosts = {}
+global value_cache
+global server
 value_cache = collections.OrderedDict()
 
 class ExpiringDeque(collections.deque):
@@ -68,6 +70,16 @@ def axis_max(val,neg):
     if neg: max_y*=2
     return max_y
 
+def strip_0(d):
+    s = str(d)
+    return (s.rstrip('0').rstrip('.') if '.' in s else s)
+
+def round_to_1(x):
+    x = int(x)
+    if x == 0: return "0"
+    return strip_0(str(round(x, -int(Math.floor(Math.log10(abs(x)))))))
+    
+
 def generate_points(dlist):
     msg=""
     data=[]
@@ -84,7 +96,21 @@ def generate_points(dlist):
         data.append(vals)
         msgc = rmsg.sub("", d[0])
         if msgc: msg = msgc
-    timeMid = int((dlist[-1][1] - dlist[0][1]) / len(dlist) * MAXPOINTS / 2)
+    time_half = float((dlist[-1][1] - dlist[0][1]) / len(dlist) * MAXPOINTS / 2)
+    hrs = int(time_half / 3600);
+    mins = int((time_half % 3600) / 60);
+    secs = int(time_half % 60);
+    timestring = "";
+    if hrs:
+        timestring = hrs+"h";
+        timestring += round_to_1(mins)+"m";
+    elif mins:
+        timestring += round_to_1(mins)+"m";
+        if 4>mins and secs > 10:
+            timestring += round_to_1(secs)+"s";
+    else:
+        timestring = round_to_1(secs)+"s";
+    
     max_val = axis_max(max_val,neg_val)
     mid_val = max_val / 2
     
@@ -94,7 +120,8 @@ def generate_points(dlist):
         mid_idx += 1
     if mid_val > 1: mid_val = round(mid_val, 2);
     if mid_val > 0: mid_val = round(mid_val, 2); # TODO: think here and in SVG, 3-d precision is when v < 0.3 https://github.com/grandrew/plotti.co/issues/11
-    valueMid = "%s%s" % (mid_val, SUPS[mid_idx])
+    s = str(mid_val)
+    valueMid = "%s%s" % (strip_0(mid_val), SUPS[mid_idx])
     
     points = ""
     oldx = 0
@@ -112,7 +139,7 @@ def generate_points(dlist):
         oldx = x
         x = oldx + 500 / MAXPOINTS # width / pts
         i+=1
-    return max_val, valueMid, "%ss"%timeMid, neg_val, msg, points # trdn=20
+    return max_val, valueMid, timestring, time_half, neg_val, msg, points # trdn=20
 
 def apply_template(s, keys):
     for k in keys:
@@ -141,12 +168,12 @@ def plotwh(hashstr,width,height):
     svg = file('main.svg','r').read()
     trdn = 20
     if hashstr in value_cache:
-        max_val, valueMid, timeMid, neg_val, msg, points = generate_points(value_cache[hashstr])
+        max_val, valueMid, timeMid, secondsMid, neg_val, msg, points = generate_points(value_cache[hashstr])
         value_cache[hashstr].update()
         if neg_val: trdn -= 68
-        svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":msg, "VALUEMID":valueMid, "TIMEMID":timeMid, "DATAPOINTS":points, "INIT_MAX_Y": max_val, "MAX_Y": max_val}) # TODO templating engine
+        svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":msg, "VALUEMID":valueMid, "TIMEMID":timeMid, "DATAPOINTS":points, "INIT_MAX_Y": max_val, "MAX_Y": max_val, "SECONDS_SCALE": secondsMid}) # TODO templating engine
     else:
-        svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":"", "VALUEMID":"0.5", "TIMEMID":"10s", "DATAPOINTS":"","INIT_MAX_Y": "false", "MAX_Y": 0}) # TODO templating engine
+        svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":"", "VALUEMID":"0.5", "TIMEMID":"10s", "DATAPOINTS":"","INIT_MAX_Y": "false", "MAX_Y": 0, "SECONDS_SCALE":0}) # TODO templating engine
         
     if width and height: svg = svg.replace('height="210" width="610"', 'height="%s" width="%s"' % (height, width)) # TODO: switch to templating
     return flask.Response(svg,  mimetype= 'image/svg+xml')
@@ -229,7 +256,18 @@ def parseOptions():
     options, args = parser.parse_args()
     return options, args, parser
 
+def shutdown():
+    global server
+    print('Shutting down ...')
+    server.stop(timeout=2)
+    print('Saving state ...')
+    marshal.dump(file("/var/spool/plottico_datacache.marshal",'w'), value_cache)
+    #exit(signal.SIGTERM)
+
+gevent.signal(signal.SIGTERM, shutdown)
+
 if __name__ == "__main__":
+    global server
     opt, args, parser = parseOptions()
     debug = False
     port=80
@@ -240,7 +278,16 @@ if __name__ == "__main__":
         port=int(opt.port)
     if opt.host:
         host=opt.host
+    
+    try:
+        f = file("/var/spool/plottico_datacache.marshal")
+        print "Loading value cache..."
+        value_cache = marshal.load(f)
+    except IOError:
+        pass
+        
     print "Starting on port", port
+    
 
     app.debug = debug
     if debug: server = WSGIServer((host, port), app)

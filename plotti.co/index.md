@@ -13,6 +13,8 @@ Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that g
 <iframe src="https://ghbtns.com/github-btn.html?user=grandrew&amp;repo=plotti.co&amp;type=watch&amp;count=true&amp;size=large"
   allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe><br/>
 
+*Now supporting data cache and static `<img>`*
+
 ## Usage
 
 ### Including live image in your page
@@ -20,27 +22,28 @@ Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that g
 To include a live plot on your webpage, you just need to put in an SVG image:
 
 ~~~html
-<object data="http://plotti.co/YOUR_HASH" type="image/svg+xml"/>
+<object data="http://plotti.co/YOUR_HASH.svg" type="image/svg+xml"/>
 ~~~
 
-where `YOUR_HASH` is the hash you chose for your stream. We will use it in the following example to feed the data.
+where `YOUR_HASH.svg` is the hash you chose for your stream, `.svg` is optional. We will use it in the following example to feed the data.
 
 here it is:
 
 <object id="yhimg" data="http://plotti.co/YOUR_HASH/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
+You may also use a `<img src="http://plotti.co/YOUR_HASH.svg"/>` but in this case you won't get live updates, just a pre-cached plot with latest data.
 
 ### Feeding the data to the image
 
 Just a simple GET to the same hash with an argument `d`:
 
 ~~~
-http://plotti.co/YOUR_HASH?d=<value>,<value>,...
+http://plotti.co/YOUR_HASH.svg?d=<value>,<value>,...
 ~~~
 
 You can try it by clicking here:
 
-<a id="yhref" onclick="feed()">http://plotti.co/YOUR_HASH?d=,,2</a>
+<a id="yhref" onclick="feed()">http://plotti.co/YOUR_HASH.svg?d=,,2</a>
 
 ## Quick examples
 
@@ -80,7 +83,9 @@ done
 
 <object data="http://plotti.co/plotticonn" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
-More examples in the [wiki](https://github.com/grandrew/plotti.co/wiki/Cool-usage-examples)
+### More examples
+
+More examples can be found in the [wiki](https://github.com/grandrew/plotti.co/wiki/Cool-usage-examples)
 
 ## Explanation
 
@@ -153,6 +158,8 @@ HTTPS coming soon.
 ## Limitations
 
 - Data feed rate is limited to 50 updates/sec per host. Please request if you need more
+- Your cached data will be deleted after 1 hour of idling (no updates or views)
+- The server is stateless and will drop locks and cached data on restart ([fixing asap](https://github.com/grandrew/plotti.co/issues/14))
 - You can not have more than 6 plots streaming in one browser (working on it)
 - There are some known [bugs](https://github.com/grandrew/plotti.co/issues)
 - Microsoft Edge does not support EventSource [yet](http://caniuse.com/#search=EventSource)
@@ -228,7 +235,7 @@ function makeid()
     var text = "";
     var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    for( var i=0; i < 12; i++ )
+    for( var i=0; i < 6; i++ )
         text += possible.charAt(Math.floor(Math.random() * possible.length));
 
     return text;
@@ -240,8 +247,8 @@ function feed() {
 }
 
 document.getElementById("yhimg").setAttribute("data", "http://plotti.co/"+YH+"/plot.svg");
-document.getElementById("yhref").innerHTML="http://plotti.co/"+YH+"?d=,,2";
-document.getElementById("yhref2").innerHTML="http://plotti.co/"+YH+"?d=,,,,,,1.0";
+document.getElementById("yhref").innerHTML="http://plotti.co/"+YH+".svg?d=,,2";
+document.getElementById("yhref2").innerHTML="http://plotti.co/"+YH+".svg?d=,,,,,,1.0";
 function feed() {
     var myImage = new Image(1, 1);
     myImage.src = "http://plotti.co/"+YH+"?d=,,2&h="+makeid();

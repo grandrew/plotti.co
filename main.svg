@@ -11,13 +11,35 @@ var scaleY = 1.0;
 var tr_x = 0;
 var init_max_y = $INIT_MAX_Y;
 var max_y = $MAX_Y;
-
+var scale_sec = $SECONDS_SCALE;
 var height = 150; // value used for generator
 var width = 500; // value used for generator
 var trdn = 0;
+
+function round_to_1(x) {
+    return parseFloat((x).toPrecision(1))
+}
+
 function T(time_half) {
     document.getElementById("trel").setAttribute("transform", "translate("+tr_x+",150) scale(1,"+(-scaleY)+")");
-    if(time_half) document.getElementById("timeMid").innerHTML=parseInt(time_half)+"s";
+    if(time_half) {
+        var hrs = ~~(time_half / 3600);
+        var mins = ~~((time_half % 3600) / 60);
+        var secs = parseInt(time_half % 60);
+        var timestring = "";
+        if(hrs) {
+            timestring = hrs+"h";
+            timestring += round_to_1(mins)+"m";
+        } else if(mins) {
+            timestring += round_to_1(mins)+"m";
+            if(4>mins) if (secs>10) {
+                timestring += round_to_1(secs)+"s";
+            } 
+        } else {
+            timestring = round_to_1(secs)+"s";
+        }
+        document.getElementById("timeMid").innerHTML=timestring;
+    }
 }
 
 stream.onmessage = function (e) {
@@ -87,7 +109,7 @@ function gen_pt(i, ydata, x) {
 function init() {
     var de = document.getElementById("trel");
     if(de.firstChild) if(!de.firstChild.xval) {
-        var max_t = parseInt(document.getElementById("timeMid").innerHTML)*2;
+        var max_t = scale_sec*2;
         var pts = de.childNodes.length;
         var dt = max_t / MAXPOINTS;
         var ts = (new Date()).getTime() / 1000;
@@ -96,7 +118,9 @@ function init() {
             de.childNodes[j].seconds = ts - ((pts - j) * dt);
         }
         for(var j=0;de.lastChild.childNodes.length>j;j++) {
-            l_y[j] = de.lastChild.childNodes[j].points[1].y;
+            l = de.lastChild.childNodes[j].getAttribute("points").split(",");
+            //l_y[j] = de.lastChild.childNodes[j].points[1].y;
+            l_y[j] = parseInt(l[l.length-1]);
         }
         old_x = pts * (width / MAXPOINTS);
     }
