@@ -1,22 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" class="chart" height="210" width="610" viewBox="0 0 610 210" preserveAspectRatio="none">
+<svg xmlns="http://www.w3.org/2000/svg" class="chart" height="210" width="610" viewBox="0 0 610 210" preserveAspectRatio="none" onload="init()">
 <script type="text/javascript" charset="utf-8">
 var hashstr = document.location.pathname.split("/")[1]
 var stream = new EventSource('http://' + document.domain + ':' + location.port + "/"+hashstr+"/stream")
 xmlns = "http://www.w3.org/2000/svg";
 
+var MAXPOINTS = $MAXPOINTS;
 var old_x = 0;
-var old_y = 0;
 var l_y = [0,0,0,0,0,0,0,0,0,0];
 var scaleY = 1.0;
 var tr_x = 0;
-var init_max_y = false;// --generated
-var max_y = 0;// --generated
+var init_max_y = $INIT_MAX_Y;
+var max_y = $MAX_Y;
 
 var height = 150; // value used for generator
 var width = 500; // value used for generator
 var trdn = 0;
 function T(time_half) {
-    document.getElementById("trel").setAttribute("transform", "translate("+tr_x+",150") scale(1,"+(-scaleY)+")");
+    document.getElementById("trel").setAttribute("transform", "translate("+tr_x+",150) scale(1,"+(-scaleY)+")");
     if(time_half) document.getElementById("timeMid").innerHTML=parseInt(time_half)+"s";
 }
 
@@ -24,13 +24,13 @@ stream.onmessage = function (e) {
     tr = document.getElementById("trel");
     var all_data = e.data.split(",").slice(0, 9);
     var el = document.createElementNS(xmlns,"g");
-    var x = old_x + width / 50; // value used for generator (50 pts)
+    var x = old_x + width / MAXPOINTS; // value used for generator (50 pts)
     for(i=0; all_data.length>i;i++) {
         if(all_data[i] == "") continue;
         var pt = gen_pt(i, all_data[i], x);
         el.appendChild(pt);
     }
-    var seconds = new Date().getTime() / 1000;
+    var seconds = (new Date()).getTime() / 1000;
     el.seconds = seconds;
     el.xval = x;
     old_x = x;
@@ -83,6 +83,25 @@ function gen_pt(i, ydata, x) {
     l_y[i] = y;
     return el;
 }
+
+function init() {
+    var de = document.getElementById("trel");
+    if(de.firstChild) if(!de.firstChild.xval) {
+        var max_t = parseInt(document.getElementById("timeMid").innerHTML)*2;
+        var pts = de.childNodes.length;
+        var dt = max_t / MAXPOINTS;
+        var ts = (new Date()).getTime() / 1000;
+        for(var j=0;pts>j;j++) {
+            de.childNodes[j].xval = j * (width / MAXPOINTS);
+            de.childNodes[j].seconds = ts - ((pts - j) * dt);
+        }
+        for(var j=0;de.lastChild.childNodes.length>j;j++) {
+            l_y[j] = de.lastChild.childNodes[j].points[1].y;
+        }
+        old_x = pts * (width / MAXPOINTS);
+    }
+}
+
 </script>
 <style>
 
@@ -149,10 +168,10 @@ body, html {
 
 </style>
 
-<g transform="translate(55,$TRDN)" id="shift"><!-- --generated -->
-<text x="5" y="5" text-anchor="start" id="msg" style="font-size: 18px">$MSG</text><!-- --generated -->
-<text x="-5" y="79" text-anchor="end" id="valueMid" style="font-size: 18px">$VALUEMID</text><!-- --generated -->
-<text x="250" y="170" text-anchor="middle" id="timeMid" style="font-size: 18px">$TIMEMID</text><!-- --generated -->
+<g transform="translate(55,$TRDN)" id="shift">
+<text x="5" y="5" text-anchor="start" id="msg" style="font-size: 18px">$MSG</text>
+<text x="-5" y="79" text-anchor="end" id="valueMid" style="font-size: 18px">$VALUEMID</text>
+<text x="250" y="170" text-anchor="middle" id="timeMid" style="font-size: 18px">$TIMEMID</text>
 <text x="-5" y="155" text-anchor="end" id="zeroax" style="font-size: 18px">0</text>
 <svg class="axis">
     <polyline points="0,150 500,150"/>
@@ -163,6 +182,6 @@ body, html {
 <svg class="liner">
     <polyline points="0,75 500,75"/>
 </svg>
-<g transform="translate(0,100) scale(1,-1)" id="trel"></g>
+<g transform="translate(0,150) scale(1,-1)" id="trel">$DATAPOINTS</g>
 </g>
 </svg>
