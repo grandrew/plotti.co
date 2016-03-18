@@ -153,9 +153,9 @@ HTTPS coming soon.
 ## Limitations
 
 - Data feed rate is limited to 50 updates/sec per host. Please request if you need more
-- You can not have more than 6 plots streaming in one browser (being worked on)
+- You can not have more than 6 plots streaming in one browser (working on it)
 - There are some known [bugs](https://github.com/grandrew/plotti.co/issues)
-- Microsoft Edge does not support EventSource yet
+- Microsoft Edge does not support EventSource [yet](http://caniuse.com/#search=EventSource)
 
 ## Terms of serve and privacy
 
