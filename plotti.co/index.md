@@ -113,33 +113,15 @@ where `WIDTH` and `HEIGHT` are width and height of the image respectively. Using
 The microservice supports up to 9 inputs, each can be omitted at any time and each has its own color:
 
 ~~~css
-.src0 {
-    stroke: #5DA5DA; /* (blue) */
-}
-.src1 {
-    stroke: #F15854; /* (red) */
-}
-.src2 {
-    stroke: #DECF3F; /* (yellow) */
-}
-.src3 {
-    stroke: #B276B2; /* (purple) */
-}
-.src4 {
-    stroke: #B2912F; /* (brown) */
-}
-.src5 {
-    stroke: #F17CB0; /* (pink) */
-}
-.src6 {
-    stroke: #60BD68; /* (green) */
-}
-.src7 {
-    stroke: #FAA43A; /* (orange) */
-}
-.src8 {
-    stroke: #4D4D4D; /* (gray) */
-}
+.src0 { stroke: #5DA5DA; /* (blue) */   }
+.src1 { stroke: #F15854; /* (red) */    }
+.src2 { stroke: #DECF3F; /* (yellow) */ }
+.src3 { stroke: #B276B2; /* (purple) */ }
+.src4 { stroke: #B2912F; /* (brown) */  }
+.src5 { stroke: #F17CB0; /* (pink) */   }
+.src6 { stroke: #60BD68; /* (green) */  }
+.src7 { stroke: #FAA43A; /* (orange) */ }
+.src8 { stroke: #4D4D4D; /* (gray) */   }
 ~~~
 
 for example, to use color `green` you only provide the 7th input: <a id="yhref2" onclick="feed2()">http://plotti.co/YOUR_HASH?d=,,,,,,1.0</a>
@@ -155,10 +137,7 @@ window.addEventListener("load", function load(event) {
     for(var il=0;il<limg.length;il++) {
         var s=limg[il].getAttribute("src");
         if(s.startsWith("http://plotti.co/")) {
-            limg[il].outerHTML='<object data="'+s+'" type="image/svg+xml"></object>';
-        }
-    }
-},false);
+            limg[il].outerHTML='<object data="'+s+'" type="image/svg+xml"></object>';}}},false);
 ~~~
 
 ## Security
