@@ -1,6 +1,6 @@
-import flask, time, random, optparse, collections, string, re, signal, json
+import flask, time, optparse, collections, string, re, signal, json, traceback
 import math as Math
-from flask import request
+from flask import request, abort
 from flask.ext.cache import Cache
 import gevent
 from gevent.wsgi import WSGIServer
@@ -77,10 +77,6 @@ MAXPOINTS = 50
 FIG_HEIGHT = 150 # TODO: use in template generator
 def axis_max(val,neg):
     max_y = max(val, -neg)
-    if neg:
-        max_y_c = max_y / 2;
-    else:
-        max_y_c = max_y;
     dig=max_y;
     max_y = (Math.floor(dig/Math.pow(10,Math.floor(Math.log10(dig))))+1)*Math.pow(10,Math.floor(Math.log10(dig))); 
     if neg: max_y*=2
@@ -118,7 +114,7 @@ def generate_points(dlist):
     secs = int(time_half % 60);
     timestring = "";
     if hrs:
-        timestring = hrs+"h";
+        timestring = str(hrs)+"h";
         timestring += round_to_1(mins)+"m";
     elif mins:
         timestring += round_to_1(mins)+"m";
@@ -136,7 +132,6 @@ def generate_points(dlist):
         mid_idx += 1
     if mid_val > 1: mid_val = round(mid_val, 2);
     if mid_val > 0: mid_val = round(mid_val, 2); # TODO: think here and in SVG, 3-d precision is when v < 0.3 https://github.com/grandrew/plotti.co/issues/11
-    s = str(mid_val)
     valueMid = "%s%s" % (strip_0(mid_val), SUPS[mid_idx])
     
     points = ""
@@ -148,7 +143,9 @@ def generate_points(dlist):
         v = 0
         if i != 0:
             for y in vals:
-                if y is None: continue
+                if y is None or v >= len(data[i-1]) or data[i-1][v] is None: 
+                    v+=1
+                    continue
                 onerow += '<polyline class="src%s" points="%s,%s %s,%s"/>' % (v, oldx,int(data[i-1][v]/max_val*FIG_HEIGHT),x,int(y/max_val*FIG_HEIGHT))
                 v+=1
             points+=onerow+"</g>"
@@ -184,10 +181,15 @@ def plotwh(hashstr,width,height):
     svg = file('main.svg','r').read()
     trdn = 20
     if hashstr in value_cache:
-        max_val, valueMid, timeMid, secondsMid, neg_val, msg, points = generate_points(value_cache[hashstr])
-        value_cache[hashstr].update()
-        if neg_val: trdn -= 68
-        svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":msg, "VALUEMID":valueMid, "TIMEMID":timeMid, "DATAPOINTS":points, "INIT_MAX_Y": max_val, "MAX_Y": max_val, "SECONDS_SCALE": secondsMid}) # TODO templating engine
+        try:
+            max_val, valueMid, timeMid, secondsMid, neg_val, msg, points = generate_points(value_cache[hashstr])
+            value_cache[hashstr].update()
+            if neg_val: trdn -= 68
+            svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":msg, "VALUEMID":valueMid, "TIMEMID":timeMid, "DATAPOINTS":points, "INIT_MAX_Y": max_val, "MAX_Y": max_val, "SECONDS_SCALE": secondsMid}) # TODO templating engine
+        except:
+            print "GENERATE_ERROR"
+            traceback.print_exc()
+            svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":"", "VALUEMID":"0.5", "TIMEMID":"10s", "DATAPOINTS":"","INIT_MAX_Y": "false", "MAX_Y": 0, "SECONDS_SCALE":0}) # TODO templating engine
     else:
         svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":"", "VALUEMID":"0.5", "TIMEMID":"10s", "DATAPOINTS":"","INIT_MAX_Y": "false", "MAX_Y": 0, "SECONDS_SCALE":0}) # TODO templating engine
         
@@ -225,7 +227,9 @@ def feeder(hashstr):
     else:
         ip = request.remote_addr
     try:
-        if hashstr in lhosts and ip != lhosts[hashstr]: return ""
+        if hashstr in lhosts and ip != lhosts[hashstr]: 
+            abort(403)
+            return ""
     except KeyError:
         return ""
     def notify():

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" class="chart" height="210" width="610" viewBox="0 0 610 210" preserveAspectRatio="none" onload="init()">
 <script type="text/javascript" charset="utf-8">
-var hashstr = document.location.pathname.split("/")[1]
+var hashstr = document.location.pathname.split("/")[document.location.pathname.split("/").length-1];
 var stream = new EventSource('http://' + document.domain + ':' + location.port + "/"+hashstr+"/stream")
 xmlns = "http://www.w3.org/2000/svg";
 
@@ -117,10 +117,11 @@ function init() {
             de.childNodes[j].xval = j * (width / MAXPOINTS);
             de.childNodes[j].seconds = ts - ((pts - j) * dt);
         }
+        var innum=0;
         for(var j=0;de.lastChild.childNodes.length>j;j++) {
+            innum = parseInt(de.lastChild.childNodes[j].getAttribute("class").replace("src",""));
             l = de.lastChild.childNodes[j].getAttribute("points").split(",");
-            //l_y[j] = de.lastChild.childNodes[j].points[1].y;
-            l_y[j] = parseInt(l[l.length-1]);
+            l_y[innum] = parseInt(l[l.length-1]);
         }
         old_x = pts * (width / MAXPOINTS);
     }

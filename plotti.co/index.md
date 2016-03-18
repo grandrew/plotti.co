@@ -98,7 +98,7 @@ $ wget "http://plotti.co/YOUR_HASH?d=1.5,3.6,7.8mbps" -O /dev/null
 the format of the request is 
 
 ~~~
-?d=[value_red],[value_blue],...
+?d=[value_blue],[value_red],...
 ~~~
 
 Where each `[value_X]` is a separate line drawn on the plot. You may optionally append units as short string to any of the data values to show it as "y" axis units or just as a general message.
