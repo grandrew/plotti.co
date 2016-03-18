@@ -9,15 +9,14 @@ var old_y = 0;
 var l_y = [0,0,0,0,0,0,0,0,0,0];
 var scaleY = 1.0;
 var tr_x = 0;
-var init_max_y = false;
-var max_y = 0;
+var init_max_y = false;// --generated
+var max_y = 0;// --generated
 
-var height = 150;
-var width = 500;
-var tr_y = 150; 
+var height = 150; // value used for generator
+var width = 500; // value used for generator
 var trdn = 0;
 function T(time_half) {
-    document.getElementById("trel").setAttribute("transform", "translate("+tr_x+","+tr_y+") scale(1,"+(-scaleY)+")");
+    document.getElementById("trel").setAttribute("transform", "translate("+tr_x+",150") scale(1,"+(-scaleY)+")");
     if(time_half) document.getElementById("timeMid").innerHTML=parseInt(time_half)+"s";
 }
 
@@ -25,7 +24,7 @@ stream.onmessage = function (e) {
     tr = document.getElementById("trel");
     var all_data = e.data.split(",").slice(0, 9);
     var el = document.createElementNS(xmlns,"g");
-    var x = old_x + width / 50;
+    var x = old_x + width / 50; // value used for generator (50 pts)
     for(i=0; all_data.length>i;i++) {
         if(all_data[i] == "") continue;
         var pt = gen_pt(i, all_data[i], x);
@@ -74,7 +73,7 @@ function gen_pt(i, ydata, x) {
     document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex; 
     var y = parseInt(y_data / init_max_y * height);
     if(0 > y) if (trdn == 0) {
-        trdn = -68+20;
+        trdn = -68+20; // value used for generator
         document.getElementById("shift").setAttribute("transform", "translate(55,"+trdn+")");
     }
     var pt = old_x+","+l_y[i]+" "+x+","+y;
@@ -150,9 +149,11 @@ body, html {
 
 </style>
 
-<g transform="translate(55,20)" id="shift">
-<text x="5" y="5" text-anchor="start" id="msg" style="font-size: 18px"></text>
-
+<g transform="translate(55,$TRDN)" id="shift"><!-- --generated -->
+<text x="5" y="5" text-anchor="start" id="msg" style="font-size: 18px">$MSG</text><!-- --generated -->
+<text x="-5" y="79" text-anchor="end" id="valueMid" style="font-size: 18px">$VALUEMID</text><!-- --generated -->
+<text x="250" y="170" text-anchor="middle" id="timeMid" style="font-size: 18px">$TIMEMID</text><!-- --generated -->
+<text x="-5" y="155" text-anchor="end" id="zeroax" style="font-size: 18px">0</text>
 <svg class="axis">
     <polyline points="0,150 500,150"/>
     <polyline points="250,150 250,146"/>
@@ -162,11 +163,6 @@ body, html {
 <svg class="liner">
     <polyline points="0,75 500,75"/>
 </svg>
-<text x="-5" y="75" text-anchor="end" id="valueMid" style="font-size: 18px">0.5</text>
-<text x="250" y="170" text-anchor="middle" id="timeMid" style="font-size: 18px">10s</text>
-<text x="-5" y="150" text-anchor="end" id="zeroax" style="font-size: 18px">0</text>
-
-
 <g transform="translate(0,100) scale(1,-1)" id="trel"></g>
 </g>
 </svg>
