@@ -1,4 +1,4 @@
-import flask, time, optparse, collections, string, re, signal, json, traceback
+import flask, time, optparse, collections, string, re, signal, marshal, traceback
 import math as Math
 from flask import request, abort
 from flask.ext.cache import Cache
@@ -30,11 +30,11 @@ def dump_cache():
         d[k]={}
         d[k]["value"] = list(value_cache[k])
         d[k]["ts"] = value_cache[k].ts
-    json.dump(d, file("/var/spool/plottico_datacache.json",'w'))
+    marshal.dump(d, file("/var/spool/plottico_datacache.dat",'w'))
 
 def load_cache():
     global value_cache
-    j = json.load(file("/var/spool/plottico_datacache.json"))
+    j = marshal.load(file("/var/spool/plottico_datacache.dat"))
     for k in j:
         e = ExpiringDeque(j[k]["value"])
         e.ts = j[k]["ts"]
@@ -282,7 +282,9 @@ def shutdown():
     print('Shutting down ...')
     server.stop(timeout=2)
     print('Saving state ...')
+    t1=time.time()
     dump_cache()
+    print "Cache dump took", time.time()-t1, "seconds"
     #dill.dump(value_cache, file("/var/spool/plottico_datacache.dat",'w'))
     #exit(signal.SIGTERM)
 
@@ -302,10 +304,11 @@ if __name__ == "__main__":
         host=opt.host
     
     try:
-        f = file("/var/spool/plottico_datacache.json")
-        print "Loading value cache..."
+        t1=time.time()
         load_cache()
+        print "Cache load took", time.time()-t1, "seconds"
     except IOError:
+        print "Not loading value cache..."
         pass
         
     print "Starting on port", port
