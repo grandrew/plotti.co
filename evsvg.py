@@ -24,6 +24,10 @@ global value_cache
 global server
 value_cache = collections.OrderedDict()
 
+image_views = 0
+updates_received = 0
+updates_pushed = 0
+
 def dump_cache():
     d={}
     for k in value_cache:
@@ -177,6 +181,7 @@ def plot(hashstr):
 #@cache.cached(timeout=500)
 @app.route( '/<hashstr>/<width>x<height>.svg' )
 def plotwh(hashstr,width,height):
+    global image_views 
     value_cache_clean_one()
     svg = file('main.svg','r').read()
     trdn = 20
@@ -194,6 +199,7 @@ def plotwh(hashstr,width,height):
         svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":"", "VALUEMID":"0.5", "TIMEMID":"10s", "DATAPOINTS":"","INIT_MAX_Y": "false", "MAX_Y": 0, "SECONDS_SCALE":0}) # TODO templating engine
         
     if width and height: svg = svg.replace('height="210" width="610"', 'height="%s" width="%s"' % (height, width)) # TODO: switch to templating
+    image_views += 1
     return flask.Response(svg,  mimetype= 'image/svg+xml')
 
 @limiter.limit("50 per second")
@@ -210,6 +216,7 @@ def lock(hashstr):
 @limiter.limit("50 per second")
 @app.route('/<hashstr>', methods=['GET'])
 def feeder(hashstr):
+    global updates_received 
     data = request.args.get('d')
     if not data:
         return plot(hashstr)
@@ -233,9 +240,12 @@ def feeder(hashstr):
     except KeyError:
         return ""
     def notify():
+        global updates_pushed 
+        updates_pushed += len(subscriptions[hashstr])
         for sub in subscriptions[hashstr][:]:
             sub.put(data)
     gevent.spawn(notify)
+    updates_received += 1
     return flask.Response('<svg xmlns="http://www.w3.org/2000/svg"></svg>', mimetype= 'image/svg+xml')
 
 
@@ -288,7 +298,14 @@ def shutdown():
     #dill.dump(value_cache, file("/var/spool/plottico_datacache.dat",'w'))
     #exit(signal.SIGTERM)
 
+def dump_stats():
+    fs = file("/tmp/plottico_stats","w")
+    fs.write("%s\n%s\n%s\n" % (image_views, updates_received, updates_pushed))
+    fs.flush()
+    fs.close()
+
 gevent.signal(signal.SIGTERM, shutdown)
+gevent.signal(signal.SIGUSR1, dump_stats)
 
 if __name__ == "__main__":
     global server
