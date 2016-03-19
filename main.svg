@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" class="chart" height="210" width="610" viewBox="0 0 610 210" preserveAspectRatio="none" onload="init()">
 <script type="text/javascript" charset="utf-8">
-var hashstr = document.location.pathname.split("/")[document.location.pathname.split("/").length-1];
+var pathlist = document.location.pathname.split("/");
+if(pathlist[1] == "lock") hashstr = pathlist[pathlist.length-1];
+else hashstr = pathlist[1];
 var stream = new EventSource('http://' + document.domain + ':' + location.port + "/"+hashstr+"/stream")
 xmlns = "http://www.w3.org/2000/svg";
 
