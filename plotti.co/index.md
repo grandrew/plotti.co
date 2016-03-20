@@ -138,11 +138,11 @@ There are cases where the environment that you use does support images in docume
 ~~~js
 window.addEventListener("load", function load(event) {
     window.removeEventListener("load", load, false);
-    var limg=document.getElementsByTagName("IMG");
+    setInterval(function(){ var limg=document.getElementsByTagName("IMG");
     for(var il=0;il<limg.length;il++) {
         var s=limg[il].getAttribute("src");
         if(s.startsWith("http://plotti.co/")) {
-            limg[il].outerHTML='<object data="'+s+'" type="image/svg+xml"></object>';}}},false);
+            limg[il].outerHTML='<object data="'+s+'" type="image/svg+xml"></object>';}} }, 1000);},false);
 ~~~
 
 ## Security
@@ -274,13 +274,11 @@ $(".highlighter-rouge").each(function () {
 
 window.addEventListener("load", function load(event) {
     window.removeEventListener("load", load, false);
-    setTimeout(function(){ var limg=document.getElementsByTagName("IMG");
+    setInterval(function(){ var limg=document.getElementsByTagName("IMG");
     for(var il=0;il<limg.length;il++) {
         var s=limg[il].getAttribute("src");
-        console.log(s);
         if(s.startsWith("http://plotti.co/")) {
-            limg[il].outerHTML='<object data="'+s+'" type="image/svg+xml"></object>';}} }, 1000);
-    },false);
+            limg[il].outerHTML='<object data="'+s+'" type="image/svg+xml"></object>';}} }, 1000);},false);
 
 
 setInterval(pushData, 300);
