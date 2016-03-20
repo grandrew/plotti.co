@@ -1,5 +1,5 @@
 # Site settings
-title: Plottico - the most simple way to create live plots
+title: Plottico - the simplest way to create real-time live plots
 tag_text: Plotti.co <sup style='font-size:35%; top:-1.5em;color:gray'><i>beta</i></sup>
 description: Plottico is a web api that generates live plots in SVG images.
 

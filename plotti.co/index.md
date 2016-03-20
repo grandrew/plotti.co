@@ -56,7 +56,7 @@ wget -O /dev/null -q http://plotti.co/lock/plottycocpu?d=`mpstat -P ALL 1 1 | aw
 done
 ~~~
 
-<object data="http://plotti.co/plottycocpu" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+<img src="http://plotti.co/plottycocpu" style="width: 570px; height: 190px;"/>
 
 ### Network load on plottico
 
@@ -69,7 +69,7 @@ while true; do
 done
 ~~~
 
-<object data="http://plotti.co/plotticonet" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+<img src="http://plotti.co/plotticonet" style="width: 570px; height: 190px;"/>
 
 ### Current open connections
 
@@ -81,7 +81,7 @@ sleep 1
 done
 ~~~
 
-<object data="http://plotti.co/plotticonn" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+<img src="http://plotti.co/plotticonn" style="width: 570px; height: 190px;"/>
 
 ### More examples
 
@@ -272,6 +272,15 @@ $(".highlighter-rouge").each(function () {
 });
 
 
+window.addEventListener("load", function load(event) {
+    window.removeEventListener("load", load, false);
+    setTimeout(function(){ var limg=document.getElementsByTagName("IMG");
+    for(var il=0;il<limg.length;il++) {
+        var s=limg[il].getAttribute("src");
+        console.log(s);
+        if(s.startsWith("http://plotti.co/")) {
+            limg[il].outerHTML='<object data="'+s+'" type="image/svg+xml"></object>';}} }, 1000);
+    },false);
 
 
 setInterval(pushData, 300);

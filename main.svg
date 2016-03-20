@@ -52,6 +52,7 @@ stream.onmessage = function (e) {
     for(i=0; all_data.length>i;i++) {
         if(all_data[i] == "") continue;
         var pt = gen_pt(i, all_data[i], x);
+        if(!pt) continue;
         el.appendChild(pt);
     }
     var seconds = (new Date()).getTime() / 1000;
@@ -96,6 +97,7 @@ function gen_pt(i, ydata, x) {
     if(mid_val > 0) mid_val = Math.round(mid_val * 1000) / 1000;
     document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex; 
     var y = parseInt(y_data / init_max_y * height);
+    if(!y || !l_y[i]) return false;
     if(0 > y) if (trdn == 0) {
         trdn = -68+20; // value used for generator
         document.getElementById("shift").setAttribute("transform", "translate(55,"+trdn+")");
