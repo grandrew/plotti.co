@@ -105,7 +105,7 @@ def generate_points(dlist):
         data.append(vals)
         msgc = rmsg.sub("", d[0])
         if msgc: msg = msgc
-    time_half = (dlist[-1][1] / len(dist) - dlist[0][1] / len(dlist)) * MAXPOINTS / 2
+    time_half = (dlist[-1][1] / len(dlist) - dlist[0][1] / len(dlist)) * MAXPOINTS / 2
     hrs = int(time_half / 3600);
     mins = int((time_half % 3600) / 60);
     secs = int(time_half % 60);
