@@ -5,18 +5,11 @@ from flask.ext.cache import Cache
 import gevent
 from gevent.wsgi import WSGIServer
 from gevent.queue import Queue
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 
 VALUE_CACHE_MAXAGE = 4000
 
 app = flask.Flask(__name__)
 cache = Cache(app,config={'CACHE_TYPE': 'simple'})
-
-limiter = Limiter(
-    app,
-    key_func=get_remote_address,
-)
 
 subscriptions = {}
 lhosts = {}
@@ -202,7 +195,6 @@ def plotwh(hashstr,width,height):
     image_views += 1
     return flask.Response(svg,  mimetype= 'image/svg+xml')
 
-@limiter.limit("50 per second")
 @app.route('/lock/<hashstr>', methods=['GET'])
 def lock(hashstr):
     if request.headers.getlist("X-Forwarded-For"):
@@ -213,7 +205,6 @@ def lock(hashstr):
         lhosts[hashstr] = ip
     return feeder(hashstr)
 
-@limiter.limit("50 per second")
 @app.route('/<hashstr>', methods=['GET'])
 def feeder(hashstr):
     global updates_received 
