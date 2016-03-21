@@ -6,7 +6,7 @@ layout: default
 
 Live plotting that **just works**.
 
-<br/><object id="live1" data="//plotti.co/plotti.co/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"/>
+<br/><object id="live1" data="https://plotti.co/plotti.co/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"/>
 
 Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that generates live-streaming SVG-image plots to be embedded as an `<object>` tag of your web page. That simple.
 
@@ -22,14 +22,14 @@ Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that g
 To include a live plot on your webpage, you just need to put in an SVG image:
 
 ~~~html
-<object data="//plotti.co/YOUR_HASH.svg" type="image/svg+xml"/>
+<object data="https://plotti.co/YOUR_HASH.svg" type="image/svg+xml"/>
 ~~~
 
 where `YOUR_HASH.svg` is the hash you chose for your stream, `.svg` is optional. We will use it in the following example to feed the data.
 
 here it is:
 
-<object id="yhimg" data="//plotti.co/YOUR_HASH/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+<object id="yhimg" data="https://plotti.co/YOUR_HASH/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
 You may also use a `<img src="http://plotti.co/YOUR_HASH.svg"/>` but in this case you won't get live updates, just a pre-cached plot with latest data.
 
@@ -56,7 +56,7 @@ wget -O /dev/null -q http://plotti.co/lock/plottycocpu?d=`mpstat -P ALL 1 1 | aw
 done
 ~~~
 
-<img src="//plotti.co/plottycocpu" style="width: 570px; height: 190px;"/>
+<img src="https://plotti.co/plottycocpu" style="width: 570px; height: 190px;"/>
 
 ### Network load on plottico
 
@@ -69,7 +69,7 @@ while true; do
 done
 ~~~
 
-<img src="//plotti.co/plotticonet" style="width: 570px; height: 190px;"/>
+<img src="https://plotti.co/plotticonet" style="width: 570px; height: 190px;"/>
 
 ### Current open connections
 
@@ -81,7 +81,7 @@ sleep 1
 done
 ~~~
 
-<img src="//plotti.co/plotticonn" style="width: 570px; height: 190px;"/>
+<img src="https://plotti.co/plotticonn" style="width: 570px; height: 190px;"/>
 
 ### More examples
 
@@ -108,7 +108,7 @@ Where each `[value_X]` is a separate line drawn on the plot. You may optionally 
 You can specify image size that you want your SVG to advertise:
 
 ~~~html
-<object data="//plotti.co/YOUR_HASH/WIDTHxHEIGHT.svg" type="image/svg+xml"></object>
+<object data="https://plotti.co/YOUR_HASH/WIDTHxHEIGHT.svg" type="image/svg+xml"></object>
 ~~~
 
 where `WIDTH` and `HEIGHT` are width and height of the image respectively. Using a specified size makes any styling in the embedding document unnessessary.
@@ -227,7 +227,7 @@ function pushData() {
     if(y2<0)y2=0;
     if(y3<0)y3=0;
     var myImage = new Image(1, 1);
-    myImage.src = "//plotti.co/"+my_hash+"?d="+y1+"rand,"+y2+","+y3;
+    myImage.src = "https://plotti.co/"+my_hash+"?d="+y1+"rand,"+y2+","+y3;
     //console.log(myImage);
 }
 function makeid()
@@ -246,19 +246,19 @@ function feed() {
        
 }
 
-document.getElementById("yhimg").setAttribute("data", "//plotti.co/"+YH+"/plot.svg");
+document.getElementById("yhimg").setAttribute("data", "https://plotti.co/"+YH+"/plot.svg");
 document.getElementById("yhref").innerHTML="http://plotti.co/"+YH+".svg?d=,,2";
 document.getElementById("yhref2").innerHTML="http://plotti.co/"+YH+".svg?d=,,,,,,1.0";
 function feed() {
     var myImage = new Image(1, 1);
-    myImage.src = "//plotti.co/"+YH+"?d=,,2&h="+makeid();
+    myImage.src = "https://plotti.co/"+YH+"?d=,,2&h="+makeid();
     //console.log(myImage);
     return false;
 }
 
 function feed2() {
     var myImage = new Image(1, 1);
-    myImage.src = "//plotti.co/"+YH+"?d=,,,,,,1.0&h="+makeid();
+    myImage.src = "https://plotti.co/"+YH+"?d=,,,,,,1.0&h="+makeid();
     //console.log(myImage);
     return false;
 }
