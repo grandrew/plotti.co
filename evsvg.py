@@ -299,10 +299,13 @@ def shutdown():
     #exit(signal.SIGTERM)
 
 def dump_stats():
-    fs = file("/tmp/plottico_stats","w")
-    fs.write("%s\n%s\n%s\n" % (image_views, updates_received, updates_pushed))
-    fs.flush()
-    fs.close()
+    try:
+        fs = file("/tmp/plottico_stats","w")
+        fs.write("%s\n%s\n%s\n" % (image_views, updates_received, updates_pushed))
+        fs.flush()
+        fs.close()
+    except IOError:
+        print "Could not dump stats!"
 
 gevent.signal(signal.SIGTERM, shutdown)
 gevent.signal(signal.SIGUSR1, dump_stats)
