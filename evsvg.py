@@ -106,6 +106,8 @@ def generate_points(dlist):
         msgc = rmsg.sub("", d[0])
         if msgc: msg = msgc
     time_half = float((dlist[-1][1] - dlist[0][1]) / len(dlist) * MAXPOINTS / 2)
+    if time_half < 1.0:
+        print "TH=0", dlist[-1][1], dlist[0][1], len(dlist)
     hrs = int(time_half / 3600);
     mins = int((time_half % 3600) / 60);
     secs = int(time_half % 60);
