@@ -6,7 +6,7 @@ layout: default
 
 Live plotting that **just works**.
 
-<br/><object id="live1" data="http://plotti.co/plotti.co/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"/>
+<br/><object id="live1" data="//plotti.co/plotti.co/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"/>
 
 Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that generates live-streaming SVG-image plots to be embedded as an `<object>` tag of your web page. That simple.
 
@@ -22,14 +22,14 @@ Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that g
 To include a live plot on your webpage, you just need to put in an SVG image:
 
 ~~~html
-<object data="http://plotti.co/YOUR_HASH.svg" type="image/svg+xml"/>
+<object data="//plotti.co/YOUR_HASH.svg" type="image/svg+xml"/>
 ~~~
 
 where `YOUR_HASH.svg` is the hash you chose for your stream, `.svg` is optional. We will use it in the following example to feed the data.
 
 here it is:
 
-<object id="yhimg" data="http://plotti.co/YOUR_HASH/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+<object id="yhimg" data="//plotti.co/YOUR_HASH/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
 
 You may also use a `<img src="http://plotti.co/YOUR_HASH.svg"/>` but in this case you won't get live updates, just a pre-cached plot with latest data.
 
@@ -56,7 +56,7 @@ wget -O /dev/null -q http://plotti.co/lock/plottycocpu?d=`mpstat -P ALL 1 1 | aw
 done
 ~~~
 
-<img src="http://plotti.co/plottycocpu" style="width: 570px; height: 190px;"/>
+<img src="//plotti.co/plottycocpu" style="width: 570px; height: 190px;"/>
 
 ### Network load on plottico
 
@@ -69,7 +69,7 @@ while true; do
 done
 ~~~
 
-<img src="http://plotti.co/plotticonet" style="width: 570px; height: 190px;"/>
+<img src="//plotti.co/plotticonet" style="width: 570px; height: 190px;"/>
 
 ### Current open connections
 
@@ -81,7 +81,7 @@ sleep 1
 done
 ~~~
 
-<img src="http://plotti.co/plotticonn" style="width: 570px; height: 190px;"/>
+<img src="//plotti.co/plotticonn" style="width: 570px; height: 190px;"/>
 
 ### More examples
 
@@ -108,7 +108,7 @@ Where each `[value_X]` is a separate line drawn on the plot. You may optionally 
 You can specify image size that you want your SVG to advertise:
 
 ~~~html
-<object data="http://plotti.co/YOUR_HASH/WIDTHxHEIGHT.svg" type="image/svg+xml"></object>
+<object data="//plotti.co/YOUR_HASH/WIDTHxHEIGHT.svg" type="image/svg+xml"></object>
 ~~~
 
 where `WIDTH` and `HEIGHT` are width and height of the image respectively. Using a specified size makes any styling in the embedding document unnessessary.
@@ -138,11 +138,11 @@ There are cases where the environment that you use does support images in docume
 ~~~js
 window.addEventListener("load", function load(event) {
     window.removeEventListener("load", load, false);
-    setInterval(function(){ var limg=document.getElementsByTagName("IMG");
-    for(var il=0;il<limg.length;il++) {
-        var s=limg[il].getAttribute("src");
-        if(s.startsWith("http://plotti.co/")) {
-            limg[il].outerHTML='<object data="'+s+'" type="image/svg+xml"></object>';}} }, 1000);},false);
+    setInterval(function() { var limg = document.getElementsByTagName("IMG");
+    var r = new RegExp("^(http:|https:|)\/\/plotti.co");
+    for(var il=0; il<limg.length; il++) {
+        var s = limg[il].getAttribute("src"); if(r.test(s)) {
+            limg[il].outerHTML = '<object data="'+s+'" type="image/svg+xml"></object>';}}}, 1000); },false);
 ~~~
 
 ## Security
@@ -227,7 +227,7 @@ function pushData() {
     if(y2<0)y2=0;
     if(y3<0)y3=0;
     var myImage = new Image(1, 1);
-    myImage.src = "http://plotti.co/"+my_hash+"?d="+y1+"rand,"+y2+","+y3;
+    myImage.src = "//plotti.co/"+my_hash+"?d="+y1+"rand,"+y2+","+y3;
     //console.log(myImage);
 }
 function makeid()
@@ -246,19 +246,19 @@ function feed() {
        
 }
 
-document.getElementById("yhimg").setAttribute("data", "http://plotti.co/"+YH+"/plot.svg");
+document.getElementById("yhimg").setAttribute("data", "//plotti.co/"+YH+"/plot.svg");
 document.getElementById("yhref").innerHTML="http://plotti.co/"+YH+".svg?d=,,2";
 document.getElementById("yhref2").innerHTML="http://plotti.co/"+YH+".svg?d=,,,,,,1.0";
 function feed() {
     var myImage = new Image(1, 1);
-    myImage.src = "http://plotti.co/"+YH+"?d=,,2&h="+makeid();
+    myImage.src = "//plotti.co/"+YH+"?d=,,2&h="+makeid();
     //console.log(myImage);
     return false;
 }
 
 function feed2() {
     var myImage = new Image(1, 1);
-    myImage.src = "http://plotti.co/"+YH+"?d=,,,,,,1.0&h="+makeid();
+    myImage.src = "//plotti.co/"+YH+"?d=,,,,,,1.0&h="+makeid();
     //console.log(myImage);
     return false;
 }
@@ -274,11 +274,11 @@ $(".highlighter-rouge").each(function () {
 
 window.addEventListener("load", function load(event) {
     window.removeEventListener("load", load, false);
-    setInterval(function(){ var limg=document.getElementsByTagName("IMG");
-    for(var il=0;il<limg.length;il++) {
-        var s=limg[il].getAttribute("src");
-        if(s.startsWith("http://plotti.co/")) {
-            limg[il].outerHTML='<object data="'+s+'" type="image/svg+xml"></object>';}} }, 1000);},false);
+    setInterval(function() { var limg = document.getElementsByTagName("IMG");
+    var r = new RegExp("^(http:|https:|)\/\/plotti.co");
+    for(var il=0; il<limg.length; il++) {
+        var s = limg[il].getAttribute("src"); if(r.test(s)) {
+            limg[il].outerHTML = '<object data="'+s+'" type="image/svg+xml"></object>';}}}, 1000); },false);
 
 
 setInterval(pushData, 300);
