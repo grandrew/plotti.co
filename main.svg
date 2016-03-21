@@ -3,7 +3,7 @@
 var pathlist = document.location.pathname.split("/");
 if(pathlist[1] == "lock") hashstr = pathlist[pathlist.length-1];
 else hashstr = pathlist[1];
-var stream = new EventSource('http://' + document.domain + ':' + location.port + "/"+hashstr+"/stream")
+var stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream")
 xmlns = "http://www.w3.org/2000/svg";
 
 var MAXPOINTS = $MAXPOINTS;
