@@ -22,7 +22,7 @@ Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that g
 To include a live plot on your webpage, you just need to put in an SVG image:
 
 ~~~html
-<object data="https://plotti.co/YOUR_HASH.svg" type="image/svg+xml"/>
+<object data="http://plotti.co/YOUR_HASH.svg" type="image/svg+xml"/>
 ~~~
 
 where `YOUR_HASH.svg` is the hash you chose for your stream, `.svg` is optional. We will use it in the following example to feed the data.
@@ -215,7 +215,7 @@ You can send any feedback and suggestions to ag@vrayo.com or realgrandrew@gmail.
 
 <script>
 my_hash=Math.random()*100000000;
-document.getElementById("live1").setAttribute("data", "http://plotti.co/"+my_hash+"/plot.svg");
+document.getElementById("live1").setAttribute("data", "https://plotti.co/"+my_hash+"/plot.svg");
 y1=0
 y2=0
 y3=0
