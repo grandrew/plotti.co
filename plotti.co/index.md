@@ -137,12 +137,15 @@ There are cases where the environment that you use does support images in docume
 
 ~~~js
 window.addEventListener("load", function load(event) {
-    window.removeEventListener("load", load, false);
-    setInterval(function() { var limg = document.getElementsByTagName("IMG");
-    var r = new RegExp("^(http:|https:|)\/\/plotti.co");
-    for(var il=0; il<limg.length; il++) {
-        var s = limg[il].getAttribute("src"); if(r.test(s)) {
-            limg[il].outerHTML = '<object data="'+s+'" type="image/svg+xml"></object>';}}}, 1000); },false);
+window.removeEventListener("load", load, false);
+setInterval(function() { var limg = document.getElementsByTagName("IMG");
+var r = new RegExp("^(http:|https:|)\/\/plotti.co");
+for(var il=0; il<limg.length; il++) { var s = limg[il].getAttribute("src"); if(r.test(s)) {
+var p = limg[il].parentNode; var st = limg[il].getAttribute("style");
+var cl = limg[il].getAttribute("class"); var o = document.createElement("object");
+o.setAttribute("data", s); o.setAttribute("type", "image/svg+xml");
+o.setAttribute("class", cl); o.setAttribute("style", st);
+p.replaceChild(o,limg[il]);}}}, 1000); },false);
 ~~~
 
 ## Security
@@ -271,14 +274,19 @@ $(".highlighter-rouge").each(function () {
     $(this).html( $(this).html().replace("YOUR_HASH", YH) );
 });
 
-
 window.addEventListener("load", function load(event) {
     window.removeEventListener("load", load, false);
     setInterval(function() { var limg = document.getElementsByTagName("IMG");
     var r = new RegExp("^(http:|https:|)\/\/plotti.co");
     for(var il=0; il<limg.length; il++) {
         var s = limg[il].getAttribute("src"); if(r.test(s)) {
-            limg[il].outerHTML = '<object data="'+s+'" type="image/svg+xml"></object>';}}}, 1000); },false);
+            var p = limg[il].parentNode; var st = limg[il].getAttribute("style");
+            var cl = limg[il].getAttribute("class");
+            var o = document.createElement("object");
+            o.setAttribute("data", s); o.setAttribute("type", "image/svg+xml");
+            o.setAttribute("class", cl); o.setAttribute("style", st);
+            p.replaceChild(o,limg[il]);}}}, 1000); },false);
+
 
 
 setInterval(pushData, 300);
