@@ -1,3 +1,4 @@
+<?xml-stylesheet type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" ?>
 <svg xmlns="http://www.w3.org/2000/svg" class="chart" height="210" width="610" viewBox="0 0 610 210" preserveAspectRatio="none" onload="init()">
 <script type="text/javascript" charset="utf-8">
 var pathlist = document.location.pathname.split("/");
@@ -17,6 +18,7 @@ var scale_sec = $SECONDS_SCALE;
 var height = 150; // value used for generator
 var width = 500; // value used for generator
 var trdn = 0;
+var _init_done = false;
 
 function round_to_1(x) {
     return parseFloat((x).toPrecision(1))
@@ -45,6 +47,7 @@ function T(time_half) {
 }
 
 stream.onmessage = function (e) {
+    if(!_init_done) return;
     tr = document.getElementById("trel");
     var all_data = e.data.split(",").slice(0, 9);
     var el = document.createElementNS(xmlns,"g");
@@ -116,6 +119,12 @@ function gen_pt(i, ydata, x) {
 }
 
 function init() {
+    if(navigator.userAgent.indexOf('AppleWebKit') != -1){
+        // fix for webkit bug https://bugs.chromium.org/p/chromium/issues/detail?id=467484
+        var rect = document.documentElement.getBoundingClientRect();
+        var width_off = 610 - rect.width;
+        document.getElementById("labels").setAttribute("x", parseInt(document.getElementById("labels").getAttribute("x")) - width_off);
+    }
     var de = document.getElementById("trel");
     if(de.firstChild) if(!de.firstChild.xval) {
         var max_t = scale_sec*2;
@@ -134,6 +143,23 @@ function init() {
         }
         old_x = pts * (width / MAXPOINTS);
     }
+    _init_done = true;
+}
+
+function renderImage() {
+    var img = new Image()
+    img.onload = function(){
+        var canvas=document.createElementNS("http://www.w3.org/1999/xhtml","canvas")
+        canvas.width = parseInt(document.documentElement.getAttribute("width"))
+        canvas.height = parseInt(document.documentElement.getAttribute("height"))
+        var ctx = canvas.getContext("2d")
+        ctx.drawImage(img,0,0)
+        var imgDataURL = canvas.toDataURL();
+        document.getElementById("downloadlink").href=imgDataURL;
+        document.getElementById("downloadlink").style.color="gray";
+    }
+    var svg_xml = (new XMLSerializer()).serializeToString(document.documentElement);
+    img.src="data:image/svg+xml;base64,"+btoa(svg_xml);
 }
 
 </script>
@@ -200,6 +226,34 @@ body, html {
     stroke: #4D4D4D; /* (gray) */
 }
 
+
+.links {
+    color: lightgray;
+}
+
+.social:hover {
+    opacity: 1;
+    transition: opacity 0.7s ease-in-out;
+}
+
+.social {
+    opacity: 0;
+    transition: opacity 0.7s ease-in-out;
+}
+
+
+.byplotti {
+    color: lightgray; 
+    position: relative; 
+    top: 5px; 
+    left: 145px; 
+    font-size: 10px;
+    text-decoration: none;
+}
+.byplotti:hover {
+    color: gray; 
+}
+
 </style>
 
 <g transform="translate(55,$TRDN)" id="shift">
@@ -218,4 +272,9 @@ body, html {
 </svg>
 <g transform="translate(0,150) scale(1,-1)" id="trel">$DATAPOINTS</g>
 </g>
+<foreignObject x="340" y="10" width="250" height="100" id="labels">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="width: 200px; height: 100px;" class="social">
+          <a href="https://plotti.co" target="_blank" class="byplotti">plotti.co</a><a href="#" class="links" style="color: lightgray; position: relative; top: 10px; left: 160px;" id="downloadlink" download="plot.png" onmouseover="renderImage()" onmouseout="this.style.color='lightgray'"><i class="fa fa-download fa-1"></i></a>
+      </div>
+</foreignObject>
 </svg>
