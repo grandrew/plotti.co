@@ -1,11 +1,12 @@
 <?xml-stylesheet type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" ?>
-<svg xmlns="http://www.w3.org/2000/svg" class="chart" height="210" width="610" viewBox="0 0 610 210" preserveAspectRatio="none" onload="init()">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="chart" height="210" width="610" viewBox="0 0 610 210" preserveAspectRatio="none" onload="init()">
 <script type="text/javascript" charset="utf-8">
+xmlns = "http://www.w3.org/2000/svg";
+
 var pathlist = document.location.pathname.split("/");
 if(pathlist[1] == "lock") hashstr = pathlist[pathlist.length-1];
 else hashstr = pathlist[1];
-var stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream")
-xmlns = "http://www.w3.org/2000/svg";
+   
 
 var MAXPOINTS = $MAXPOINTS;
 var old_x = 0;
@@ -46,7 +47,7 @@ function T(time_half) {
     }
 }
 
-stream.onmessage = function (e) {
+function ev_process (e) {
     if(!_init_done) return;
     tr = document.getElementById("trel");
     var all_data = e.data.split(",").slice(0, 9);
@@ -72,6 +73,19 @@ stream.onmessage = function (e) {
     T(time_half);
 }
 
+if (!window.EventSource) {
+    var js = document.createElementNS("http://www.w3.org/1999/xhtml", "script")
+    js.src = "/eventsource.min.js";
+    document.documentElement.appendChild(js);
+    js.onload = js.onreadystatechange = function() {
+        var stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream")
+        stream.onmessage = ev_process;
+    }
+} else {
+    var stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream")
+    stream.onmessage = ev_process;
+}
+ 
 function gen_pt(i, ydata, x) {
     var y_data = parseFloat(ydata); 
     var txt = ydata.replace(RegExp("[\\d.,]+"),"");
