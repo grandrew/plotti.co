@@ -21,6 +21,10 @@ var width = 500; // value used for generator
 var trdn = 0;
 var _init_done = false;
 
+Math.log10 = Math.log10 || function(x) {
+  return Math.log(x) / Math.LN10;
+};
+
 function round_to_1(x) {
     return parseFloat((x).toPrecision(1))
 }
