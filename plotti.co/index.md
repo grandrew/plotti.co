@@ -2,6 +2,16 @@
 layout: default
 ---
 
+{::options parse_block_html="true" /}
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+var js, fjs = d.getElementsByTagName(s)[0];
+if (d.getElementById(id)) return;
+js = d.createElement(s); js.id = id;
+js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
+fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
 Live plotting that **just works**.
 
 <br/><object id="live1" data="https://plotti.co/plotti.co/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"/>
@@ -9,7 +19,19 @@ Live plotting that **just works**.
 Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that generates live-streaming SVG-image plots to be embedded as an `<object>` tag of your web page. That simple.
 
 <iframe src="https://ghbtns.com/github-btn.html?user=grandrew&amp;repo=plotti.co&amp;type=watch&amp;count=true&amp;size=large"
-  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe><br/>
+  allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
+
+<div style="display: inline-block;" class="shares"><span class="shares"><a href="https://twitter.com/share" class="twitter-share-button" data-size="default" data-hashtags="plottico" style="display: inline-block;">Tweet</a></span>
+</div>
+
+<div class="shares" style="height: 31px; position: relative; top: -4px;">
+<div class="fb-share-button" 
+data-href="http://plotti.co" 
+data-layout="button_count" style="display: inline-block;">
+</div>
+</div>
+
+<br/>
 
 *Now supporting data cache and static `<img>`*
 
