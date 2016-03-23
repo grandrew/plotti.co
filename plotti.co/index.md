@@ -2,8 +2,6 @@
 layout: default
 ---
 
-<script src="https://cdn.jsdelivr.net/jquery/3.0.0-beta1/jquery.min.js"></script>
-
 Live plotting that **just works**.
 
 <br/><object id="live1" data="https://plotti.co/plotti.co/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"/>
