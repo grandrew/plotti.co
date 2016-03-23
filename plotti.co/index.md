@@ -163,7 +163,7 @@ If you want to lock a single host IP address as a feeder of the data so that no 
 - The server is stateless and will drop locks on restart ([fixing asap](https://github.com/grandrew/plotti.co/issues/14))
 - You can not have more than 6 plots streaming in one browser (working on it)
 - There are some known [bugs](https://github.com/grandrew/plotti.co/issues)
-- Microsoft Edge does not support EventSource [yet](http://caniuse.com/#search=EventSource)
+- Microsoft Edge does not support EventSource [yet](http://caniuse.com/#search=EventSource), but a workaround is [implemented](https://github.com/grandrew/plotti.co/issues/13).
 
 ## Terms of serve and privacy
 

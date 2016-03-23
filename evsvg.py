@@ -170,6 +170,10 @@ def index():
 @app.route( '/eventsource.min.js' )
 def es():
     return flask.Response( file('eventsource.min.js','r').read(),  mimetype= 'text/javascript')
+@cache.cached(timeout=500)
+@app.route( '/plottico.png' )
+def preview():
+    return flask.Response( file('plottico.png','rb').read(),  mimetype= 'image/png')
 
 #@cache.cached(timeout=500)
 @app.route( '/<hashstr>/plot.svg' )
