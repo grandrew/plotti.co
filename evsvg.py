@@ -202,7 +202,7 @@ def plotwh(hashstr,width,height):
         
     if width and height: svg = svg.replace('height="210" width="610"', 'height="%s" width="%s"' % (height, width)) # TODO: switch to templating
     image_views += 1
-    return flask.Response(svg,  mimetype= 'image/svg+xml')
+    return flask.Response(svg,  mimetype= 'image/svg+xml', headers={'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache'})
 
 @app.route('/lock/<hashstr>', methods=['GET'])
 def lock(hashstr):
@@ -246,7 +246,7 @@ def feeder(hashstr):
             sub.put(data)
     gevent.spawn(notify)
     updates_received += 1
-    return flask.Response('<svg xmlns="http://www.w3.org/2000/svg"></svg>', mimetype= 'image/svg+xml')
+    return flask.Response('<svg xmlns="http://www.w3.org/2000/svg"></svg>', mimetype= 'image/svg+xml', headers={'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache'})
 
 
 
