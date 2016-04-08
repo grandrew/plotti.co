@@ -6,7 +6,7 @@ import gevent
 from gevent.wsgi import WSGIServer
 from gevent.queue import Queue
 
-VALUE_CACHE_MAXAGE = 4000
+VALUE_CACHE_MAXAGE = 90000
 
 app = flask.Flask(__name__)
 cache = Cache(app,config={'CACHE_TYPE': 'simple'})
