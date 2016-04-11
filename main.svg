@@ -60,7 +60,7 @@ function T(time_half) {
 
 function ev_process (e) {
     if(!this._init_done) {
-        console.log(this.hashstr+" is not initialized");
+        // console.log(this.hashstr+" is not initialized");
         return;
     }
     this.tr = this.document.getElementById("trel");
@@ -68,7 +68,7 @@ function ev_process (e) {
     var dest_hash = dlist[0];
     var msg_id = parseInt(dlist[1]);
     var p_data = dlist[2];
-    console.log("Event at "+this.hashstr+" dest:"+dest_hash+" id:"+msg_id+" data:"+p_data);
+    // console.log("Event at "+this.hashstr+" dest:"+dest_hash+" id:"+msg_id+" data:"+p_data);
     
     if(this.last_msg_id >= msg_id) return;
     this.last_msg_id = msg_id;
@@ -119,7 +119,7 @@ for (var i = 0; frames.length>i; i++) {
             // only one subscription supported
             // TODO HERE: run checks that subscription is still active!
             ptoken = frames[i].ptoken;
-            console.log("Subscribing "+hashstr+" to events from "+frames[i].hashstr);
+            // console.log("Subscribing "+hashstr+" to events from "+frames[i].hashstr);
             subscribed = true;
             break;
         }
@@ -138,7 +138,9 @@ if (!window.EventSource) {
 } else {
     var stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
     stream.onmessage = function(e){ev_process(e);};
-    stream.onopen = function(e) {if(subscribed){console.log("Closing connection on subscribed "+hashstr); stream.close();}};
+    stream.onopen = function(e) {if(subscribed){
+        //console.log("Closing connection on subscribed "+hashstr); 
+    stream.close();}};
 }
 
 function gen_pt(i, ydata, x) {
