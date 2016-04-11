@@ -13,6 +13,9 @@ cache = Cache(app,config={'CACHE_TYPE': 'simple'})
 
 subscriptions = {}
 lhosts = {}
+tokenHashes = {}
+tokenSubscriptions = {}
+
 global value_cache
 global server
 value_cache = collections.OrderedDict()
@@ -228,7 +231,9 @@ def feeder(hashstr):
     else:
         value_cache[hashstr].append((data,int(time.time())))
         value_cache[hashstr].update()
-    if not hashstr in subscriptions: return ""
+    if not hashstr in subscriptions and not hashstr in tokenHashes: 
+        # print "ERR: no subscribers, can not push", hashstr
+        return ""
     if request.headers.getlist("X-Forwarded-For"):
         ip = request.headers.getlist("X-Forwarded-For")[0]
     else:
@@ -241,35 +246,87 @@ def feeder(hashstr):
         return ""
     def notify():
         global updates_pushed 
-        updates_pushed += len(subscriptions[hashstr])
-        for sub in subscriptions[hashstr][:]:
-            sub.put(data)
+        updateHash = str(int(time.time()*1000))
+        if hashstr in subscriptions: 
+            updates_pushed += len(subscriptions[hashstr])
+            for sub in subscriptions[hashstr][:]:
+                sub.put("%s\t%s\t%s" % (hashstr, updateHash, data))
+        if hashstr in tokenHashes:
+            lClean = []
+            for ptoken in tokenHashes[hashstr]:
+                if not ptoken in tokenSubscriptions:
+                    lClean.append(ptoken)
+                    continue
+                # TODO: clean up the tokenHashes by scheduled task
+                updates_pushed += len(tokenSubscriptions[ptoken])
+                for sub in tokenSubscriptions[ptoken][:]:
+                    sub.put("%s\t%s\t%s" % (hashstr, updateHash, data))
+            for ptoken in lClean:
+                tokenHashes[hashstr].remove(ptoken)
+                # print "Deleting ptoken",ptoken 
+                if len(tokenHashes[hashstr]) == 0:
+                    # print "Deleting tokanhash", hashstr
+                    del tokenHashes[hashstr]
+            
     gevent.spawn(notify)
     updates_received += 1
     return flask.Response('<svg xmlns="http://www.w3.org/2000/svg"></svg>', mimetype= 'image/svg+xml', headers={'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache'})
 
-
-
-    
 @app.route('/<hashstr>/stream', methods=['GET'])
 def stream(hashstr):
+    ptoken = request.cookies.get('ptoken', '')
+    if not ptoken:
+        ptoken = request.values.get("ptoken", "")
+    # print "STREAM request: ptoken is ", ptoken, " for hash", hashstr
+    
+    if ptoken:
+        if hashstr in tokenHashes: 
+            tokenHashes[hashstr].append(ptoken)
+        else:
+            tokenHashes[hashstr] = [ptoken]
+        #return "";
+        
     def send_proc():
         q = Queue()
+        if ptoken:
+            if ptoken in tokenSubscriptions:
+                tokenSubscriptions[ptoken].append(q)
+            else:
+                tokenSubscriptions[ptoken] = [q]
         if not hashstr in subscriptions:
-            # TODO: race here?
             subscriptions[hashstr] = [q]
         else:
             subscriptions[hashstr].append(q)
         try:
             while True:
                 yield "data: %s\n\n" % q.get()
+        # TODO: this may actually not work, need an explicit cleanup here
         finally:
-            subscriptions[hashstr].remove(q)
-            if len(subscriptions[hashstr]) == 0:
-                try: # race?
-                    del subscriptions[hashstr]
-                except KeyError:
+            # print "Finally! for ptoken", ptoken, "hash:", hashstr 
+            if hashstr in subscriptions:
+                try:
+                    subscriptions[hashstr].remove(q)
+                except ValueError:
                     pass
+                if len(subscriptions[hashstr]) == 0:
+                    # print "Subs zero", ptoken, "hash:", hashstr 
+                    try:
+                        del subscriptions[hashstr]
+                    except KeyError:
+                        pass
+            if ptoken and ptoken in tokenSubscriptions:
+                try:
+                    tokenSubscriptions[ptoken].remove(q)
+                except ValueError:
+                    pass
+                if len(tokenSubscriptions[ptoken]) == 0:
+                    # print "Tokens zero!", ptoken, "hash:", hashstr 
+                    try:
+                        del tokenSubscriptions[ptoken]
+                    except KeyError:
+                        pass
+                
+                
     return flask.Response( send_proc(), mimetype= 'text/event-stream')
 
 def parseOptions():

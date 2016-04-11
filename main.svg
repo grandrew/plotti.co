@@ -1,6 +1,10 @@
 <?xml-stylesheet type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" ?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="chart" height="210" width="610" viewBox="0 0 610 210" preserveAspectRatio="none" onload="init()">
 <script type="text/javascript" charset="utf-8">
+
+var ptoken = Math.random().toString(36).slice(2);
+// if(document.cookie.indexOf("ptoken") == -1) document.cookie = "ptoken="+ptoken; // seems that object does not support cookies?
+
 xmlns = "http://www.w3.org/2000/svg";
 
 var pathlist = document.location.pathname.split("/");
@@ -20,6 +24,9 @@ var height = 150; // value used for generator
 var width = 500; // value used for generator
 var trdn = 0;
 var _init_done = false;
+var last_msg_id = 0;
+var callbacks = [];
+var subscribed = false;
 
 Math.log10 = Math.log10 || function(x) {
   return Math.log(x) / Math.LN10;
@@ -30,7 +37,7 @@ function round_to_1(x) {
 }
 
 function T(time_half) {
-    document.getElementById("trel").setAttribute("transform", "translate("+tr_x+",150) scale(1,"+(-scaleY)+")");
+    this.document.getElementById("trel").setAttribute("transform", "translate("+this.tr_x+",150) scale(1,"+(-this.scaleY)+")");
     if(time_half) {
         var hrs = ~~(time_half / 3600);
         var mins = ~~((time_half % 3600) / 60);
@@ -47,34 +54,76 @@ function T(time_half) {
         } else {
             timestring = round_to_1(secs)+"s";
         }
-        document.getElementById("timeMid").innerHTML=timestring;
+        this.document.getElementById("timeMid").innerHTML=timestring;
     }
 }
 
 function ev_process (e) {
-    if(!_init_done) return;
-    tr = document.getElementById("trel");
-    var all_data = e.data.split(",").slice(0, 9);
-    var el = document.createElementNS(xmlns,"g");
-    var x = old_x + width / MAXPOINTS; // value used for generator (50 pts)
+    if(!this._init_done) {
+        console.log(this.hashstr+" is not initialized");
+        return;
+    }
+    this.tr = this.document.getElementById("trel");
+    var dlist = e.data.split("\t"); // TODO: kill IE here
+    var dest_hash = dlist[0];
+    var msg_id = parseInt(dlist[1]);
+    var p_data = dlist[2];
+    console.log("Event at "+this.hashstr+" dest:"+dest_hash+" id:"+msg_id+" data:"+p_data);
+    
+    if(this.last_msg_id >= msg_id) return;
+    this.last_msg_id = msg_id;
+    
+    if(dest_hash != this.hashstr) {
+        for(var j=0; this.callbacks.length > j; j++) {
+            this.callbacks[j](e);
+        }
+        // var frames = window.parent.frames;
+        // for (var i = 0; frames.length>i; i++) { 
+        //   if(frames[i].hashstr == dest_hash) {
+        //       frames[i].ev_process(e);
+        //       // TODO: duplicate plots not supported
+        //       return;
+        //   }
+        // }
+        return;
+    } 
+    
+    var all_data = p_data.split(",").slice(0, 9);
+    var el = this.document.createElementNS(this.xmlns,"g");
+    var x = this.old_x + this.width / this.MAXPOINTS; // value used for generator (50 pts)
     for(i=0; all_data.length>i;i++) {
         if(all_data[i] == "") continue;
-        var pt = gen_pt(i, all_data[i], x);
+        var pt = this.gen_pt(i, all_data[i], x);
         if(!pt) continue;
         el.appendChild(pt);
     }
     var seconds = (new Date()).getTime() / 1000;
     el.seconds = seconds;
     el.xval = x;
-    old_x = x;
-    tr.appendChild(el);
+    this.old_x = x;
+    this.tr.appendChild(el);
     if(x > 500) {
-        tr_x = -(x-500); 
-        tr.removeChild(tr.childNodes[0]);
+        this.tr_x = -(x-500); 
+        this.tr.removeChild(this.tr.childNodes[0]);
     }
     
-    time_half = parseFloat(seconds - tr.childNodes[0].seconds) / parseFloat(x - tr.childNodes[0].xval) * parseFloat(500) / 2;
-    T(time_half);
+    var time_half = parseFloat(seconds - this.tr.childNodes[0].seconds) / parseFloat(x - this.tr.childNodes[0].xval) * parseFloat(500) / 2;
+    this.T(time_half);
+}
+
+var frames = window.parent.frames;
+for (var i = 0; frames.length>i; i++) { 
+    try {
+        if(frames[i].stream) {
+            frames[i].callbacks.push(function(e){ev_process(e);});
+            // only one subscription supported
+            // TODO HERE: run checks that subscription is still active!
+            ptoken = frames[i].ptoken;
+            console.log("Subscribing "+hashstr+" to events from "+frames[i].hashstr);
+            subscribed = true;
+            break;
+        }
+    } catch (e) {}
 }
 
 if (!window.EventSource) {
@@ -82,57 +131,58 @@ if (!window.EventSource) {
     js.src = "/eventsource.min.js";
     document.documentElement.appendChild(js);
     js.onload = js.onreadystatechange = function() {
-        var stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream")
-        stream.onmessage = ev_process;
+        var stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
+        stream.onmessage = function(e){ev_process(e);};
+        stream.onopen = function(e) {if(subscribed)stream.close();};
     }
 } else {
-    var stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream")
-    stream.onmessage = ev_process;
+    var stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
+    stream.onmessage = function(e){ev_process(e);};
+    stream.onopen = function(e) {if(subscribed){console.log("Closing connection on subscribed "+hashstr); stream.close();}};
 }
- 
+
 function gen_pt(i, ydata, x) {
     var y_data = parseFloat(ydata); 
     var txt = ydata.replace(RegExp("[\\d.,]+"),"");
     if(txt.length) {
-        document.getElementById("msg").innerHTML=txt;
+        this.document.getElementById("msg").innerHTML=txt;
     }
-    if(0 > trdn) {
-        max_y_c = max_y / 2;
-    } else {
-        max_y_c = max_y;
+    var max_y_c = this.max_y;
+    if(0 > this.trdn) {
+        max_y_c = this.max_y / 2;
     }
     
     if(Math.abs(y_data) > max_y_c) {
         var dig=Math.abs(y_data);
-        max_y = (Math.floor(dig/Math.pow(10,Math.floor(Math.log10(dig))))+1)*Math.pow(10,Math.floor(Math.log10(dig))); 
-        if(0 > trdn) max_y*=2
+        this.max_y = (Math.floor(dig/Math.pow(10,Math.floor(Math.log10(dig))))+1)*Math.pow(10,Math.floor(Math.log10(dig))); 
+        if(0 > this.trdn) max_y*=2
     }
-    if(init_max_y == false) {
-        init_max_y = max_y;
+    if(this.init_max_y == false) {
+        this.init_max_y = this.max_y;
     }
-    scaleY = init_max_y / max_y;
-    mid_val = max_y/2;
-    for(mid_idx=0;mid_val >= 1e3;mid_idx++) mid_val /= 1e3;
-    mid_val_ex = ["","k","M","G","T","e"][mid_idx];
+    this.scaleY = this.init_max_y / this.max_y;
+    var mid_val = this.max_y/2;
+    for(var mid_idx=0;mid_val >= 1e3;mid_idx++) mid_val /= 1e3;
+    var mid_val_ex = ["","k","M","G","T","e"][mid_idx];
     if(mid_val > 1) mid_val = Math.round(mid_val * 100) / 100;
     if(mid_val > 0) mid_val = Math.round(mid_val * 1000) / 1000;
-    document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex; 
-    var y = parseInt(y_data / init_max_y * height);
-    if(isNaN(y) || isNaN(l_y[i])) { 
-        if(window.console) {
-            console.log("Cannot calculate y y_data="+y_data+" init_max_y="+init_max_y+" height="+height+" ydt="+ydata);
+    this.document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex; 
+    var y = parseInt(y_data / this.init_max_y * this.height);
+    if(isNaN(y) || isNaN(this.l_y[i])) { 
+        if(this.console) {
+            console.log("Cannot calculate y y_data="+y_data+" init_max_y="+this.init_max_y+" height="+this.height+" ydt="+this.ydata);
         }
         return false;
     }
-    if(0 > y) if (trdn == 0) {
-        trdn = -68+20; // value used for generator
-        document.getElementById("shift").setAttribute("transform", "translate(55,"+trdn+")");
+    if(0 > y) if (this.trdn == 0) {
+        this.trdn = -68+20; // value used for generator
+        this.document.getElementById("shift").setAttribute("transform", "translate(55,"+this.trdn+")");
     }
-    var pt = old_x+","+l_y[i]+" "+x+","+y;
-    var el = document.createElementNS(xmlns,"polyline");
+    var pt = this.old_x+","+this.l_y[i]+" "+x+","+y;
+    var el = this.document.createElementNS(this.xmlns,"polyline");
     el.setAttributeNS(null, "points", pt);
     el.setAttributeNS(null, "class", "src"+i);
-    l_y[i] = y;
+    this.l_y[i] = y;
     return el;
 }
 
@@ -154,6 +204,9 @@ function init() {
             de.childNodes[j].seconds = ts - ((pts - j) * dt);
         }
         var innum=0;
+        if(!window.l_y) {
+            window.l_y = [0,0,0,0,0,0,0,0,0,0];
+        }
         for(var j=0;de.lastChild.childNodes.length>j;j++) {
             innum = parseInt(de.lastChild.childNodes[j].getAttribute("class").replace("src",""));
             l = de.lastChild.childNodes[j].getAttribute("points").split(",");
