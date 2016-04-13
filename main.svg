@@ -145,9 +145,10 @@ function resubscribe() {
     } else {
         stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
         stream.onmessage = function(e){ev_process(e);};
-        stream.onopen = function(e) {if(subscribed){
+        stream.onopen = function(e) {if(subscribed){ 
+            if(subscribed.readyState == 1) stream.close();
             // console.log("Closing connection on subscribed "+hashstr+" readyState "+subscribed.readyState); 
-        stream.close();}};
+        }};
     }
 }
 
