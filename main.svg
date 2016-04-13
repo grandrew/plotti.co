@@ -128,7 +128,7 @@ function resubscribe() {
         } catch (e) {}
     }
     
-    if(old_ptoken == ptoken) return;
+    if(subscribed) if(old_ptoken == ptoken) return;
     
     if (!window.EventSource) {
         var js = document.createElementNS("http://www.w3.org/1999/xhtml", "script")
@@ -146,6 +146,7 @@ function resubscribe() {
             //console.log("Closing connection on subscribed "+hashstr); 
         stream.close();}};
     }
+    subscribed = stream;
 }
 
 resubscribe();
