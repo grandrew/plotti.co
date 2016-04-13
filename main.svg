@@ -30,6 +30,8 @@ var callbacks = [];
 var subscribed = false;
 var stream = false;
 var old_ptoken = "";
+var first = true;
+var checkTimer = null;
 
 Math.log10 = Math.log10 || function(x) {
   return Math.log(x) / Math.LN10;
@@ -106,32 +108,67 @@ function ev_process (e) {
     this.T(time_half);
 }
 
+process_event = function(e) { //???
+    ev_process(e);
+};
+
 function resubscribe() {
-    if(subscribed) {
-        if(subscribed.readyState == 1) stream.close();
-        if(subscribed.readyState != 2) return;
-    }
-    if(stream) if(stream.readyState != 2) return;
-    subscribed = false;
+    
     var frames = window.parent.frames;
-    for (var i = 0; frames.length>i; i++) { 
+    // 1. check if we are the first index of plots on page
+    
+    first = true;
+    var firstIdx = 0;
+    for (var firstIdx = 0; frames.length>firstIdx; firstIdx++) { 
         try {
-            if(frames[i] != window) if(frames[i].stream) {
-                if(frames[i].stream.readyState != 2) {
-                    frames[i].callbacks.push(function(e){ev_process(e);});
-                    // only one subscription supported
-                    // TODO HERE: run checks that subscription is still active!
-                    old_ptoken = ptoken;
-                    ptoken = frames[i].ptoken;
-                    // console.log("Subscribing "+hashstr+" to events from "+frames[i].hashstr+" readyState "+frames[i].stream.readyState);
-                    subscribed = frames[i].stream;
-                    break;
-                }
+            if(frames[firstIdx].hashstr) {
+                if(frames[firstIdx] != window) first = false;
+                break;
             }
-        } catch (e) {}
+        } catch (e) {} // DOMException
     }
     
-    if(subscribed) if(old_ptoken == ptoken) return;
+    if(!first) { // if we are not first, subscribe to first
+        var cbs = frames[firstIdx].callbacks;
+        if(cbs.indexOf(process_event) == -1) cbs.push(process_event);
+        // close our connection, if we have one
+        if(stream) stream.close();
+        // take ptoken
+        old_ptoken = ptoken;
+        ptoken = frames[firstIdx].ptoken;
+    } else {
+        // console.log("First! "+hashstr);
+        // we are suddenly first... need a new ptoken
+        old_ptoken = "";
+        clearTimeout(checkTimer); // no need to check anything anymore
+    }
+    
+    
+    // if(subscribed) {
+    //     // if(subscribed.readyState == 1) stream.close();
+    //     if(subscribed.readyState != 2) return;
+    // }
+    // if(stream) if(stream.readyState != 2) return;
+    // subscribed = false;
+    // for (var i = 0; frames.length>i; i++) { 
+    //     try {
+    //         if(frames[i] != window) if(frames[i].stream) {
+    //             if(frames[i].stream.readyState != 2) {
+    //                 frames[i].callbacks.push(function(e){ev_process(e);});
+    //                 // only one subscription supported
+    //                 // TODO HERE: run checks that subscription is still active!
+    //                 old_ptoken = ptoken;
+    //                 ptoken = frames[i].ptoken;
+    //                 // console.log("Subscribing "+hashstr+" to events from "+frames[i].hashstr+" readyState "+frames[i].stream.readyState);
+    //                 subscribed = frames[i].stream;
+    //                 break;
+    //             }
+    //         }
+    //     } catch (e) {}
+    // }
+    
+    
+    if(old_ptoken == ptoken) return; // if our ptoken did not change - exit
     
     if (!window.EventSource) {
         var js = document.createElementNS("http://www.w3.org/1999/xhtml", "script")
@@ -139,22 +176,27 @@ function resubscribe() {
         document.documentElement.appendChild(js);
         js.onload = js.onreadystatechange = function() {
             stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
-            stream.onmessage = function(e){ev_process(e);};
-            stream.onopen = function(e) {if(subscribed) if(subscribed.readyState == 1) stream.close();};
+            stream.onmessage = function(e){if(subscribed)if(subscribed.readyState == 1) stream.close();ev_process(e);};
+            var stream2 = stream;
+            old_ptoken = ptoken;
+            //stream.onopen = function(e) {if(subscribed) if(subscribed.readyState == 1) stream.close();};
+            stream.onopen = function(e) {if(!first) stream2.close();};
         }
     } else {
         stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
-        stream.onmessage = function(e){ev_process(e);};
-        stream.onopen = function(e) {if(subscribed){ 
-            if(subscribed.readyState == 1) stream.close();
-            // console.log("Closing connection on subscribed "+hashstr+" readyState "+subscribed.readyState); 
-        }};
+        stream.onmessage = function(e){if(subscribed)if(subscribed.readyState == 1) stream.close();ev_process(e);};
+        // stream.onopen = function(e) {if(subscribed){if(subscribed.readyState == 1) stream.close();
+        //     // console.log("Closing connection on subscribed "+hashstr+" readyState "+subscribed.readyState); 
+        // }};
+        old_ptoken = ptoken;
+        var stream2 = stream;
+        stream.onopen = function(e) {if(!first) stream2.close();};
     }
 }
 
 resubscribe();
 
-var checkTimer = setInterval(resubscribe, 2000+parseInt(Math.random()*1000));
+if(!first) var checkTimer = setInterval(resubscribe, 2000+parseInt(Math.random()*1000));
 var reloadTimer = setTimeout((function(){location.reload();}), parseInt(2*60*1000+Math.random()*3*60*1000));
 
 function gen_pt(i, ydata, x) {
