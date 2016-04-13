@@ -305,7 +305,8 @@ def stream(hashstr):
     
     if ptoken:
         if hashstr in tokenHashes: 
-            tokenHashes[hashstr].append(ptoken)
+            # TODO: optimize here vvv
+            if not ptoken in tokenHashes[hashstr]: tokenHashes[hashstr].append(ptoken)
         else:
             tokenHashes[hashstr] = [ptoken]
         #return "";

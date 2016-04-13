@@ -28,6 +28,7 @@ var _init_done = false;
 var last_msg_id = 0;
 var callbacks = [];
 var subscribed = false;
+var old_ptoken = "";
 
 Math.log10 = Math.log10 || function(x) {
   return Math.log(x) / Math.LN10;
@@ -78,14 +79,6 @@ function ev_process (e) {
         for(var j=0; this.callbacks.length > j; j++) {
             this.callbacks[j](e);
         }
-        // var frames = window.parent.frames;
-        // for (var i = 0; frames.length>i; i++) { 
-        //   if(frames[i].hashstr == dest_hash) {
-        //       frames[i].ev_process(e);
-        //       // TODO: duplicate plots not supported
-        //       return;
-        //   }
-        // }
         return;
     } 
     
@@ -112,37 +105,53 @@ function ev_process (e) {
     this.T(time_half);
 }
 
-var frames = window.parent.frames;
-for (var i = 0; frames.length>i; i++) { 
-    try {
-        if(frames[i].stream) {
-            frames[i].callbacks.push(function(e){ev_process(e);});
-            // only one subscription supported
-            // TODO HERE: run checks that subscription is still active!
-            ptoken = frames[i].ptoken;
-            // console.log("Subscribing "+hashstr+" to events from "+frames[i].hashstr);
-            subscribed = true;
-            break;
+function resubscribe() {
+    if(subscribed) {
+        if(subscribed.readyState != 2) return;
+    }
+    subscribed = false;
+    var frames = window.parent.frames;
+    for (var i = 0; frames.length>i; i++) { 
+        try {
+            if(frames[i].stream) {
+                if(frames[i].stream.readyState != 2) {
+                    frames[i].callbacks.push(function(e){ev_process(e);});
+                    // only one subscription supported
+                    // TODO HERE: run checks that subscription is still active!
+                    old_ptoken = ptoken;
+                    ptoken = frames[i].ptoken;
+                    // console.log("Subscribing "+hashstr+" to events from "+frames[i].hashstr);
+                    subscribed = frames[i].stream;
+                    break;
+                }
+            }
+        } catch (e) {}
+    }
+    
+    if(old_ptoken == ptoken) return;
+    
+    if (!window.EventSource) {
+        var js = document.createElementNS("http://www.w3.org/1999/xhtml", "script")
+        js.src = "/eventsource.min.js";
+        document.documentElement.appendChild(js);
+        js.onload = js.onreadystatechange = function() {
+            stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
+            stream.onmessage = function(e){ev_process(e);};
+            stream.onopen = function(e) {if(subscribed)stream.close();};
         }
-    } catch (e) {}
+    } else {
+        stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
+        stream.onmessage = function(e){ev_process(e);};
+        stream.onopen = function(e) {if(subscribed){
+            //console.log("Closing connection on subscribed "+hashstr); 
+        stream.close();}};
+    }
 }
 
-if (!window.EventSource) {
-    var js = document.createElementNS("http://www.w3.org/1999/xhtml", "script")
-    js.src = "/eventsource.min.js";
-    document.documentElement.appendChild(js);
-    js.onload = js.onreadystatechange = function() {
-        var stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
-        stream.onmessage = function(e){ev_process(e);};
-        stream.onopen = function(e) {if(subscribed)stream.close();};
-    }
-} else {
-    var stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
-    stream.onmessage = function(e){ev_process(e);};
-    stream.onopen = function(e) {if(subscribed){
-        //console.log("Closing connection on subscribed "+hashstr); 
-    stream.close();}};
-}
+resubscribe();
+
+var checkTimer = setInterval(resubscribe, 6000+parseInt(Math.random()*5000));
+var reloadTimer = setTimeout((function(){location.reload();}), parseInt(2*60*1000+Math.random()*3*60*1000));
 
 function gen_pt(i, ydata, x) {
     var y_data = parseFloat(ydata) - this.y_shift; 
