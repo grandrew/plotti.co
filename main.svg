@@ -28,6 +28,7 @@ var _init_done = false;
 var last_msg_id = 0;
 var callbacks = [];
 var subscribed = false;
+var stream = false;
 var old_ptoken = "";
 
 Math.log10 = Math.log10 || function(x) {
@@ -107,20 +108,22 @@ function ev_process (e) {
 
 function resubscribe() {
     if(subscribed) {
+        if(subscribed.readyState == 1) stream.close();
         if(subscribed.readyState != 2) return;
     }
+    if(stream) if(stream.readyState != 2) return;
     subscribed = false;
     var frames = window.parent.frames;
     for (var i = 0; frames.length>i; i++) { 
         try {
-            if(frames[i].stream) {
+            if(frames[i] != window) if(frames[i].stream) {
                 if(frames[i].stream.readyState != 2) {
                     frames[i].callbacks.push(function(e){ev_process(e);});
                     // only one subscription supported
                     // TODO HERE: run checks that subscription is still active!
                     old_ptoken = ptoken;
                     ptoken = frames[i].ptoken;
-                    // console.log("Subscribing "+hashstr+" to events from "+frames[i].hashstr);
+                    // console.log("Subscribing "+hashstr+" to events from "+frames[i].hashstr+" readyState "+frames[i].stream.readyState);
                     subscribed = frames[i].stream;
                     break;
                 }
@@ -137,16 +140,15 @@ function resubscribe() {
         js.onload = js.onreadystatechange = function() {
             stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
             stream.onmessage = function(e){ev_process(e);};
-            stream.onopen = function(e) {if(subscribed)stream.close();};
+            stream.onopen = function(e) {if(subscribed) if(subscribed.readyState == 1) stream.close();};
         }
     } else {
         stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
         stream.onmessage = function(e){ev_process(e);};
         stream.onopen = function(e) {if(subscribed){
-            //console.log("Closing connection on subscribed "+hashstr); 
+            // console.log("Closing connection on subscribed "+hashstr+" readyState "+subscribed.readyState); 
         stream.close();}};
     }
-    subscribed = stream;
 }
 
 resubscribe();
