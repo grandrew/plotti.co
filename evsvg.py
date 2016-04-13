@@ -298,9 +298,8 @@ def feeder(hashstr):
 
 @app.route('/<hashstr>/stream', methods=['GET'])
 def stream(hashstr):
-    ptoken = request.cookies.get('ptoken', '')
-    if not ptoken:
-        ptoken = request.values.get("ptoken", "")
+    # ptoken = request.cookies.get('ptoken', '')
+    ptoken = request.values.get("ptoken", "")
     # print "STREAM request: ptoken is ", ptoken, " for hash", hashstr
     
     if ptoken:
