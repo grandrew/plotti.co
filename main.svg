@@ -78,12 +78,12 @@ function ev_process (e) {
     if(this.last_msg_id >= msg_id) return;
     this.last_msg_id = msg_id;
     
+    for(var j=0; this.callbacks.length > j; j++) {
+        this.callbacks[j](e);
+    }
     if(dest_hash != this.hashstr) {
-        for(var j=0; this.callbacks.length > j; j++) {
-            this.callbacks[j](e);
-        }
         return;
-    } 
+    }
     
     var all_data = p_data.split(",").slice(0, 9);
     var el = this.document.createElementNS(this.xmlns,"g");
@@ -142,31 +142,6 @@ function resubscribe() {
         old_ptoken = "";
         clearTimeout(checkTimer); // no need to check anything anymore
     }
-    
-    
-    // if(subscribed) {
-    //     // if(subscribed.readyState == 1) stream.close();
-    //     if(subscribed.readyState != 2) return;
-    // }
-    // if(stream) if(stream.readyState != 2) return;
-    // subscribed = false;
-    // for (var i = 0; frames.length>i; i++) { 
-    //     try {
-    //         if(frames[i] != window) if(frames[i].stream) {
-    //             if(frames[i].stream.readyState != 2) {
-    //                 frames[i].callbacks.push(function(e){ev_process(e);});
-    //                 // only one subscription supported
-    //                 // TODO HERE: run checks that subscription is still active!
-    //                 old_ptoken = ptoken;
-    //                 ptoken = frames[i].ptoken;
-    //                 // console.log("Subscribing "+hashstr+" to events from "+frames[i].hashstr+" readyState "+frames[i].stream.readyState);
-    //                 subscribed = frames[i].stream;
-    //                 break;
-    //             }
-    //         }
-    //     } catch (e) {}
-    // }
-    
     
     if(old_ptoken == ptoken) return; // if our ptoken did not change - exit
     
