@@ -128,7 +128,7 @@ def generate_points(dlist):
     
     # TODO: historic min, historic max?
     y_shift = 0
-    if min_val > 0 and min_val != max_val and (max_val - min_val) / max_val < 0.3 and len(data) > 20:
+    if min_val > 0 and min_val != max_val and (max_val - min_val) / max_val < 0.3 and len(data) > 20 and not ("%" in msg):
         y_shift = min_val
     else:
         min_val = 0
