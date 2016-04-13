@@ -154,7 +154,7 @@ function resubscribe() {
 
 resubscribe();
 
-var checkTimer = setInterval(resubscribe, 6000+parseInt(Math.random()*5000));
+var checkTimer = setInterval(resubscribe, 2000+parseInt(Math.random()*1000));
 var reloadTimer = setTimeout((function(){location.reload();}), parseInt(2*60*1000+Math.random()*3*60*1000));
 
 function gen_pt(i, ydata, x) {
