@@ -103,10 +103,9 @@ def generate_points(dlist):
         m=max(vals)
         if m > max_val:
             max_val = m
-        m=min(vals)
-        if min_val is None or m < min_val:
-            min_val = m
         m = min([x for x in vals if x is not None])
+        if m < min_val:
+            min_val = m
         if m < neg_val:
             neg_val = m
         data.append(vals)
@@ -129,19 +128,32 @@ def generate_points(dlist):
     
     # TODO: historic min, historic max?
     y_shift = 0
-    if min_val > 0 and (max_val - min_val) / max_val < 0.3 and len(dlist) > 20:
+    if min_val > 0 and min_val != max_val and (max_val - min_val) / max_val < 0.3 and len(data) > 20:
         y_shift = min_val
-    print min_val, neg_val, max_val, y_shift
+    else:
+        min_val = 0
     
+    # mid_val = (axis_max(max_val,neg_val) + y_shift) / 2
     max_val = axis_max(max_val-y_shift,neg_val)
-    mid_val = max_val / 2
+    mid_val = (max_val + 2*y_shift) / 2
     mid_idx = 0
     while mid_val >= 1e3 and mid_idx < SUPS_LEN-1:
         mid_val /= 1e3
         mid_idx += 1
     if mid_val > 1: mid_val = round(mid_val, 2);
     if mid_val > 0: mid_val = round(mid_val, 2); # TODO: think here and in SVG, 3-d precision is when v < 0.3 https://github.com/grandrew/plotti.co/issues/11
-    valueMid = "%s%s" % (strip_0(mid_val+y_shift), SUPS[mid_idx])
+    if mid_idx > 0: mid_val = round(mid_val, 1);
+    valueMid = "%s%s" % (strip_0(mid_val), SUPS[mid_idx])
+    
+    mid_idx = 0
+    while min_val >= 1e3 and mid_idx < SUPS_LEN-1:
+        min_val /= 1e3
+        mid_idx += 1
+    if min_val > 1: min_val = round(min_val, 2);
+    if min_val > 0: min_val = round(min_val, 2); # TODO: think here and in SVG, 3-d precision is when v < 0.3 https://github.com/grandrew/plotti.co/issues/11
+    if mid_idx > 0: min_val = round(min_val, 1);
+    valueMin = "%s%s" % (strip_0(min_val), SUPS[mid_idx])
+    
     
     points = ""
     oldx = 0
@@ -164,7 +176,7 @@ def generate_points(dlist):
         oldx = x
         x = oldx + 500 / MAXPOINTS # width / pts
         i+=1
-    return max_val, valueMid, timestring, time_half, neg_val, msg, points, y_shift # trdn=20
+    return max_val, valueMid, timestring, time_half, neg_val, msg, points, y_shift, valueMin # trdn=20
 
 def apply_template(s, keys):
     for k in keys:
@@ -204,16 +216,16 @@ def plotwh(hashstr,width,height):
     trdn = 20
     if hashstr in value_cache:
         try:
-            max_val, valueMid, timeMid, secondsMid, neg_val, msg, points, y_shift = generate_points(value_cache[hashstr])
+            max_val, valueMid, timeMid, secondsMid, neg_val, msg, points, y_shift, valueMin = generate_points(value_cache[hashstr])
             value_cache[hashstr].update()
             if neg_val: trdn -= 68
-            svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":msg, "VALUEMID":valueMid, "TIMEMID":timeMid, "DATAPOINTS":points, "INIT_MAX_Y": max_val, "MAX_Y": max_val, "SECONDS_SCALE": secondsMid, "Y_SHIFT": y_shift}) # TODO templating engine
+            svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":msg, "VALUEMID":valueMid, "TIMEMID":timeMid, "DATAPOINTS":points, "INIT_MAX_Y": max_val, "MAX_Y": max_val, "SECONDS_SCALE": secondsMid, "Y_SHIFT": y_shift, "ZERO": valueMin}) # TODO templating engine
         except:
             print "GENERATE_ERROR"
             traceback.print_exc()
-            svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":"", "VALUEMID":"0.5", "TIMEMID":"10s", "DATAPOINTS":"","INIT_MAX_Y": "false", "MAX_Y": 0, "SECONDS_SCALE":0, "Y_SHIFT": 0}) # TODO templating engine
+            svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":"", "VALUEMID":"0.5", "TIMEMID":"10s", "DATAPOINTS":"","INIT_MAX_Y": "false", "MAX_Y": 0, "SECONDS_SCALE":0, "Y_SHIFT": 0, "ZERO": 0}) # TODO templating engine
     else:
-        svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":"", "VALUEMID":"0.5", "TIMEMID":"10s", "DATAPOINTS":"","INIT_MAX_Y": "false", "MAX_Y": 0, "SECONDS_SCALE":0, "Y_SHIFT": 0}) # TODO templating engine
+        svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":"", "VALUEMID":"0.5", "TIMEMID":"10s", "DATAPOINTS":"","INIT_MAX_Y": "false", "MAX_Y": 0, "SECONDS_SCALE":0, "Y_SHIFT": 0, "ZERO": 0}) # TODO templating engine
         
     if width and height: svg = svg.replace('height="210" width="610"', 'height="%s" width="%s"' % (height, width)) # TODO: switch to templating
     image_views += 1

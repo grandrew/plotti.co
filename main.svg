@@ -164,12 +164,13 @@ function gen_pt(i, ydata, x) {
         this.init_max_y = this.max_y;
     }
     this.scaleY = this.init_max_y / this.max_y;
-    var mid_val = this.max_y/2;
+    var mid_val = (this.max_y+2*this.y_shift)/2;
     for(var mid_idx=0;mid_val >= 1e3;mid_idx++) mid_val /= 1e3;
     var mid_val_ex = ["","k","M","G","T","e"][mid_idx];
     if(mid_val > 1) mid_val = Math.round(mid_val * 100) / 100;
     if(mid_val > 0) mid_val = Math.round(mid_val * 1000) / 1000;
-    this.document.getElementById("valueMid").innerHTML=(mid_val+y_shift)+mid_val_ex; 
+    if(mid_idx > 0) mid_val = Math.round(mid_val * 10) / 10;
+    this.document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex; 
     var y = parseInt(y_data / this.init_max_y * this.height);
     if(isNaN(y) || isNaN(this.l_y[i])) { 
         if(this.console) {
@@ -334,7 +335,7 @@ body, html {
 <text x="5" y="5" text-anchor="start" id="msg" style="font-size: 18px">$MSG</text>
 <text x="-5" y="79" text-anchor="end" id="valueMid" style="font-size: 18px">$VALUEMID</text>
 <text x="250" y="170" text-anchor="middle" id="timeMid" style="font-size: 18px">$TIMEMID</text>
-<text x="-5" y="155" text-anchor="end" id="zeroax" style="font-size: 18px">$Y_SHIFT</text>
+<text x="-5" y="155" text-anchor="end" id="zeroax" style="font-size: 18px">$ZERO</text>
 <svg class="axis">
     <polyline points="0,150 500,150"/>
     <polyline points="250,150 250,146"/>
