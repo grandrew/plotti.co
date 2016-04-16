@@ -1,10 +1,19 @@
-import flask, time, optparse, collections, string, re, signal, marshal, traceback
+import gevent.monkey
+gevent.monkey.patch_all()
+import flask, time, optparse, collections, string, re, signal, marshal, traceback, sys
 import math as Math
 from flask import request, abort
 from flask.ext.cache import Cache
 import gevent
 from gevent.wsgi import WSGIServer
 from gevent.queue import Queue
+
+sys.path.append("/opt/plotticohost")
+try:
+    import datastore
+    datastore.conn_open()
+except ImportError:
+    datastore = None
 
 VALUE_CACHE_MAXAGE = 90000
 
@@ -255,6 +264,7 @@ def feeder(hashstr):
     else:
         value_cache[hashstr].append((data,int(time.time())))
         value_cache[hashstr].update()
+    if datastore: datastore.addData(hashstr, data)
     if not hashstr in subscriptions and not hashstr in tokenHashes: 
         # print "ERR: no subscribers, can not push", hashstr
         return ""
@@ -372,6 +382,7 @@ def shutdown():
     global server
     print('Shutting down ...')
     server.stop(timeout=2)
+    if datastore: datastore.conn_close()
     print('Saving state ...')
     t1=time.time()
     dump_cache()
