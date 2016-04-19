@@ -32,6 +32,7 @@ var stream = false;
 var old_ptoken = "";
 var first = true;
 var checkTimer = null;
+var y_avg = 999;
 
 Math.log10 = Math.log10 || function(x) {
   return Math.log(x) / Math.LN10;
@@ -172,7 +173,11 @@ function resubscribe() {
 resubscribe();
 
 if(!first) var checkTimer = setInterval(resubscribe, 2000+parseInt(Math.random()*1000));
-var reloadTimer = setTimeout((function(){location.reload();}), parseInt(2*60*1000+Math.random()*3*60*1000));
+function condReload() {
+    if(trdn != 0) if(y_shift != 0) location.reload();
+    if(30 > this.y_avg) location.reload();
+}
+var reloadTimer = setTimeout(condReload, parseInt(2*60*1000+Math.random()*3*60*1000));
 
 function gen_pt(i, ydata, x) {
     var y_data = parseFloat(ydata) - this.y_shift; 
@@ -212,6 +217,8 @@ function gen_pt(i, ydata, x) {
         this.trdn = -68+20; // value used for generator
         this.document.getElementById("shift").setAttribute("transform", "translate(55,"+this.trdn+")");
     }
+    this.y_avg = 49 * this.y_avg / 50 + y / 50;
+    if(y > this.y_avg) this.y_avg = y;
     var pt = this.old_x+","+this.l_y[i]+" "+x+","+y;
     var el = this.document.createElementNS(this.xmlns,"polyline");
     el.setAttributeNS(null, "points", pt);
