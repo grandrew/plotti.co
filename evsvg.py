@@ -382,11 +382,11 @@ def shutdown():
     global server
     print('Shutting down ...')
     server.stop(timeout=2)
-    if datastore: datastore.conn_close()
     print('Saving state ...')
     t1=time.time()
     dump_cache()
     print "Cache dump took", time.time()-t1, "seconds"
+    if datastore: datastore.conn_close()
     #dill.dump(value_cache, file("/var/spool/plottico_datacache.dat",'w'))
     #exit(signal.SIGTERM)
 
