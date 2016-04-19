@@ -115,6 +115,10 @@ process_event = function(e) { //???
     ev_process(e);
 };
 
+function closeStream() {
+    if(!first) stream.close();
+}
+
 function resubscribe() {
     
     var frames = window.parent.frames;
@@ -137,7 +141,7 @@ function resubscribe() {
             this.my_cb_list[this.my_cb_index] = null;
         }
         if(cbs.indexOf(process_event) == -1) {
-            this.my_cb_index = cbs.push(process_event);
+            this.my_cb_index = cbs.push(process_event) - 1;
             this.my_cb_list = cbs;
         }
         // close our connection, if we have one
@@ -161,10 +165,9 @@ function resubscribe() {
         js.onload = js.onreadystatechange = function() {
             stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
             stream.onmessage = function(e){if(subscribed)if(subscribed.readyState == 1) stream.close();ev_process(e);};
-            var stream2 = stream;
             old_ptoken = ptoken;
             //stream.onopen = function(e) {if(subscribed) if(subscribed.readyState == 1) stream.close();};
-            stream.onopen = function(e) {if(!first) stream2.close();};
+            stream.onopen = function(e) {setTimeout(closeStream, 50);};
         }
     } else {
         stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
@@ -173,8 +176,7 @@ function resubscribe() {
         //     // console.log("Closing connection on subscribed "+hashstr+" readyState "+subscribed.readyState); 
         // }};
         old_ptoken = ptoken;
-        var stream2 = stream;
-        stream.onopen = function(e) {if(!first) stream2.close();};
+        stream.onopen = function(e) {setTimeout(closeStream, 50);};
     }
 }
 
