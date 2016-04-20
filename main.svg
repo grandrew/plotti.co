@@ -106,7 +106,7 @@ function ev_process (e) {
         this.tr_x = -(x-500); 
         this.tr.removeChild(this.tr.childNodes[0]);
     }
-    if(this.tr.childNodes.length > 2) document.getElementById("singleVal").innerHTML="";
+    if(this.tr.childNodes.length) document.getElementById("singleVal").innerHTML="";
     
     var time_half = parseFloat(seconds - this.tr.childNodes[0].seconds) / parseFloat(x - this.tr.childNodes[0].xval) * parseFloat(500) / 2;
     this.T(time_half);
