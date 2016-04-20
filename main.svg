@@ -14,7 +14,7 @@ else hashstr = pathlist[1];
 
 var MAXPOINTS = $MAXPOINTS;
 var old_x = 0;
-var l_y = [0,0,0,0,0,0,0,0,0,0];
+var l_y = $L_Y;
 var scaleY = 1.0;
 var tr_x = 0;
 var init_max_y = $INIT_MAX_Y;
@@ -106,6 +106,7 @@ function ev_process (e) {
         this.tr_x = -(x-500); 
         this.tr.removeChild(this.tr.childNodes[0]);
     }
+    if(this.tr.childNodes.length > 2) document.getElementById("singleVal").innerHTML="";
     
     var time_half = parseFloat(seconds - this.tr.childNodes[0].seconds) / parseFloat(x - this.tr.childNodes[0].xval) * parseFloat(500) / 2;
     this.T(time_half);
@@ -237,6 +238,17 @@ function gen_pt(i, ydata, x) {
     return el;
 }
 
+function set_value_disp() {
+    var de = document.getElementById("trel");
+    var initVals=[];
+    if(2 > de.childNodes.length) {
+        for(var j=0;l_y.length>j;j++) {
+            if(l_y[j] != 0) initVals.push( Math.round(l_y[j] * init_max_y / height * 100) / 100);
+        }
+    }
+    document.getElementById("singleVal").innerHTML=initVals.join(";");
+}
+
 function init() {
     if(navigator.userAgent.indexOf('AppleWebKit') != -1){
         // fix for webkit bug https://bugs.chromium.org/p/chromium/issues/detail?id=467484
@@ -265,6 +277,7 @@ function init() {
         }
         old_x = pts * (width / MAXPOINTS);
     }
+    set_value_disp();
     _init_done = true;
 }
 
@@ -399,4 +412,5 @@ body, html {
           <a href="https://plotti.co" target="_blank" class="byplotti">plotti.co</a><a href="#" class="links" style="color: lightgray; position: relative; top: 10px; left: 160px;" id="downloadlink" download="plot.png" onmouseover="renderImage()" onmouseout="this.style.color='lightgray'"><i class="fa fa-download fa-1"></i></a>
       </div>
 </foreignObject>
+<text x="300" y="110" text-anchor="middle" id="singleVal" style="font-size: 60px;fill: gray;"></text>
 </svg>
