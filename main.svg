@@ -1,4 +1,4 @@
-<?xml-stylesheet type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" ?>
+<?xml-stylesheet type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="chart" height="210" width="610" viewBox="0 0 610 210" preserveAspectRatio="none" onload="init()">
 <script type="text/javascript" charset="utf-8">
 
@@ -35,6 +35,9 @@ var checkTimer = null;
 var y_avg = 999;
 var my_cb_list = null;
 var my_cb_index = -1;
+var need_reload = false;
+var avg_update_interval = $AVG_UPD;
+var last_subscribed = (new Date()).getTime() / 1000;
 
 Math.log10 = Math.log10 || function(x) {
   return Math.log(x) / Math.LN10;
@@ -88,6 +91,13 @@ function ev_process (e) {
         return;
     }
     
+    if(need_reload) if(window) {
+        window.location.reload();
+        need_reload = false;
+    } else {
+        // console.log("window is null");
+    }
+    document.getElementById("nodata").innerHTML = "";
     var all_data = p_data.split(",").slice(0, 9);
     var el = this.document.createElementNS(this.xmlns,"g");
     var x = this.old_x + this.width / this.MAXPOINTS; // value used for generator (50 pts)
@@ -109,6 +119,7 @@ function ev_process (e) {
     if(this.tr.childNodes.length) document.getElementById("singleVal").innerHTML="";
     
     var time_half = parseFloat(seconds - this.tr.childNodes[0].seconds) / parseFloat(x - this.tr.childNodes[0].xval) * parseFloat(500) / 2;
+    avg_update_interval = parseFloat(seconds - this.tr.childNodes[0].seconds) / this.tr.childNodes.length;
     this.T(time_half);
 }
 
@@ -116,8 +127,38 @@ process_event = function(e) { //???
     ev_process(e);
 };
 
-function closeStream() {
-    if(!first) stream.close();
+function closeStream(s) {
+    if(!first) {
+        s.close();
+        // console.log("closing stream - not first "+hashstr);
+    } else {
+        // console.log("first "+hashstr);
+    }
+}
+
+function _do_es() {
+    //console.log("caller is " + arguments.callee.caller.toString().split("\n")[0]);
+    if(stream) stream.close();
+    stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
+    old_ptoken = ptoken;
+    var s2 = stream;
+    last_subscribed = (new Date()).getTime() / 1000;
+    stream.onmessage = function(e){closeStream(s2); ev_process(e);};
+    stream.onopen = function(e){closeStream(s2);};
+    // stream.onopen = function(e) {setTimeout(closeStream, 50);};
+}
+
+function es_open() {
+    if (!window.EventSource) {
+        var js = document.createElementNS("http://www.w3.org/1999/xhtml", "script")
+        js.src = "/eventsource.min.js";
+        document.documentElement.appendChild(js);
+        js.onload = js.onreadystatechange = function() {
+            _do_es();
+        }
+    } else {
+        _do_es();
+    }
 }
 
 function resubscribe() {
@@ -153,40 +194,44 @@ function resubscribe() {
     } else {
         // console.log("First! "+hashstr);
         // we are suddenly first... need a new ptoken
-        old_ptoken = "";
+        ptoken = Math.random().toString(36).slice(2);
         clearTimeout(checkTimer); // no need to check anything anymore
     }
     
     if(old_ptoken == ptoken) return; // if our ptoken did not change - exit
     
-    if (!window.EventSource) {
-        var js = document.createElementNS("http://www.w3.org/1999/xhtml", "script")
-        js.src = "/eventsource.min.js";
-        document.documentElement.appendChild(js);
-        js.onload = js.onreadystatechange = function() {
-            stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
-            stream.onmessage = function(e){if(subscribed)if(subscribed.readyState == 1) stream.close();ev_process(e);};
-            old_ptoken = ptoken;
-            //stream.onopen = function(e) {if(subscribed) if(subscribed.readyState == 1) stream.close();};
-            stream.onopen = function(e) {setTimeout(closeStream, 50);};
-        }
-    } else {
-        stream = new EventSource('//' + document.domain + ':' + location.port + "/"+hashstr+"/stream?ptoken="+ptoken)
-        stream.onmessage = function(e){if(subscribed)if(subscribed.readyState == 1) stream.close();ev_process(e);};
-        // stream.onopen = function(e) {if(subscribed){if(subscribed.readyState == 1) stream.close();
-        //     // console.log("Closing connection on subscribed "+hashstr+" readyState "+subscribed.readyState); 
-        // }};
-        old_ptoken = ptoken;
-        stream.onopen = function(e) {setTimeout(closeStream, 50);};
-    }
+    es_open();
 }
 
-resubscribe();
+function check_heartbeat() {
+    this.tr = this.document.getElementById("trel");
+    var ct = (new Date()).getTime() / 1000;
+    if(this.tr.lastChild) var last_update_ts = this.tr.lastChild.seconds;
+    else var last_update_ts = ct;
+    var s_from_last_msg = ct - last_update_ts;
+    var check_intvl = avg_update_interval;
+    if(2 > check_intvl) check_intvl = 2;
+    if(s_from_last_msg > check_intvl * 2) {
+        //this.tr.lastChild.seconds = ct; // protect from looping
+        document.getElementById("nodata").innerHTML = "&#xf071;";
+        if(ct - last_subscribed > 10) {
+            // console.log("RESUB: "+(ct - last_subscribed));
+            _do_es();
+        }
+        if(avg_update_interval > 60) {
+            // console.log("Lost important points; reload");
+            need_reload = true;
+        }
+    }
+    hb_check = setTimeout(check_heartbeat, check_intvl);
+}
 
-if(!first) var checkTimer = setInterval(resubscribe, 2000+parseInt(Math.random()*1000));
+
+
+
 function condReload() {
-    if(trdn != 0) if(y_shift != 0) location.reload();
-    if((30/scaleY) > y_avg) location.reload();
+    if(trdn != 0) if(y_shift != 0) need_reload = true; 
+    if((30/scaleY) > y_avg) need_reload = true;
 }
 var reloadTimer = setInterval(condReload, parseInt(2*60*1000+Math.random()*3*60*1000));
 
@@ -266,6 +311,10 @@ function init() {
         }
         old_x = pts * (width / MAXPOINTS);
     }
+    resubscribe();
+    setTimeout(check_heartbeat, 5000);
+    checkTimer = setInterval(resubscribe, 2000+parseInt(Math.random()*1000));
+    re_es = setInterval(_do_es, 2*60*1000+parseInt(Math.random()*10000));
     _init_done = true;
 }
 
@@ -282,7 +331,7 @@ function renderImage() {
         document.getElementById("downloadlink").style.color="gray";
     }
     var svg_xml = (new XMLSerializer()).serializeToString(document.documentElement);
-    img.src="data:image/svg+xml;base64,"+btoa(svg_xml);
+    img.src="data:image/svg+xml;base64,"+btoa(unescape(encodeURIComponent(svg_xml)));
 }
 
 </script>
@@ -378,12 +427,15 @@ body, html {
 }
 
 </style>
-
+<title>Plottico plot</title>
 <g transform="translate(55,$TRDN)" id="shift">
 <text x="5" y="5" text-anchor="start" id="msg" style="font-size: 18px">$MSG</text>
 <text x="-5" y="79" text-anchor="end" id="valueMid" style="font-size: 18px">$VALUEMID</text>
 <text x="250" y="170" text-anchor="middle" id="timeMid" style="font-size: 18px">$TIMEMID</text>
 <text x="-5" y="155" text-anchor="end" id="zeroax" style="font-size: 18px">$ZERO</text>
+<g><title>No data stream</title>
+<text x="485" y="140" text-anchor="middle" id="nodata" style="font-size: 30px;fill: orange;font-family: FontAwesome;cursor: default;">$NODATA</text>
+</g>
 <svg class="axis">
     <polyline points="0,150 500,150"/>
     <polyline points="250,150 250,146"/>
