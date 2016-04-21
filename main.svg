@@ -92,8 +92,10 @@ function ev_process (e) {
     }
     
     if(need_reload) if(window) {
-        for(var i=0;this.my_cb_list.length>i;i++){
-            if(this.my_cb_list[i] === this.process_event) this.my_cb_list[i] = null;
+        if(this.my_cb_list) {
+            for(var i=0;this.my_cb_list.length>i;i++){
+                if(this.my_cb_list[i] === this.process_event) this.my_cb_list[i] = null;
+            }
         }
         window.location.reload();
         need_reload = false;
