@@ -242,7 +242,7 @@ def generate_points(dlist):
                 else: 
                     l_y = str(v)
         
-    if len(data) == 0 or time.time() - dlist[-1][1] > avg_upd * 2:
+    if len(data) == 0 or (avg_upd > 0 and time.time() - dlist[-1][1] > avg_upd * 2):
         nodata = "&#xf071;"
     else:
         nodata = ""
