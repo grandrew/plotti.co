@@ -1,12 +1,19 @@
 import gevent.monkey
 gevent.monkey.patch_all()
-import flask, time, optparse, collections, string, re, signal, marshal, traceback, sys
+import flask, time, optparse, string, re, signal, marshal, traceback, sys
 import math as Math
 from flask import request, abort
 from flask.ext.cache import Cache
 import gevent
 from gevent.wsgi import WSGIServer
 from gevent.queue import Queue
+
+from ZODB import FileStorage, DB
+import transaction
+from persistent import Persistent
+from persistent.list import PersistentList
+from BTrees.IOBTree import IOBTree
+from BTrees.OOBTree import OOBTree
 
 sys.path.append("/opt/plotticohost")
 try:
@@ -21,51 +28,88 @@ app = flask.Flask(__name__)
 cache = Cache(app,config={'CACHE_TYPE': 'simple'})
 
 subscriptions = {}
-lhosts = {}
 tokenHashes = {}
 tokenSubscriptions = {}
 
+import errno    
+import os
+
+# http://stackoverflow.com/a/600612/2659616
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+        
+DBDIR = "/var/lib/plottico/"
+DBPATH = DBDIR+'ValueCache.fs'
+mkdir_p(DBDIR)
+storage = FileStorage.FileStorage(DBPATH)
+db = DB(storage)
+conn = db.open()
+dbroot = conn.root()
+
+if not dbroot.has_key('vc'):
+    dbroot['vc'] = OOBTree()
+if not dbroot.has_key('vc_ts'):
+    dbroot['vc_ts'] = IOBTree()
+if not dbroot.has_key('lhosts'):
+    dbroot['lhosts'] = OOBTree()
+
+EPOCH = 1461251697 # TODO: manage EPOCH rotation
+
 global value_cache
+global expire_cache
 global server
-value_cache = collections.OrderedDict()
+value_cache = dbroot["vc"]
+expire_cache = dbroot["vc_ts"]
+lhosts = dbroot["lhosts"]
 
 image_views = 0
 updates_received = 0
 updates_pushed = 0
 
-def dump_cache():
-    d={}
-    for k in value_cache:
-        d[k]={}
-        d[k]["value"] = list(value_cache[k])
-        d[k]["ts"] = value_cache[k].ts
-    marshal.dump(d, file("/var/spool/plottico_datacache.dat",'w'))
-
+# used only once, then the cache file should be deleted!
 def load_cache():
     global value_cache
     j = marshal.load(file("/var/spool/plottico_datacache.dat"))
     for k in j:
-        e = ExpiringDeque(j[k]["value"])
-        e.ts = j[k]["ts"]
-        value_cache[k] = e
+        e = ExpiringDeque(k, j[k]["value"])
+        if not k in value_cache: value_cache[k] = e
 
-
-class ExpiringDeque(collections.deque):
-    def __init__(self, d=[]):
-        super(ExpiringDeque, self).__init__(d, maxlen=50)
-        self.ts = time.time()
-    def is_expired(self):
-        if time.time() - self.ts > VALUE_CACHE_MAXAGE:
-            return True
-        return False
+class ExpiringDeque(PersistentList):
+    def __init__(self, phash, d=[], maxlen=50):
+        super(ExpiringDeque, self).__init__(d)
+        self.maxlen = maxlen
+        self.phash = phash
+        self.ts = self.gen_ts()
+        for v in d:
+            self.append(v)
+        self.update()
+    def gen_ts(self):
+        return int((time.time()-EPOCH)*10000)
+    def append(self, d):
+        super(ExpiringDeque, self).append(d)
+        if len(self) > self.maxlen:
+            self.pop(0)
     def update(self):
-        self.ts = time.time()
-# TODO: updater method to re-add to top while updatuing
+        global expire_cache
+        if self.ts in expire_cache:
+            del expire_cache[self.ts]
+        self.ts = self.gen_ts()
+        expire_cache[self.ts] = self.phash
+        transaction.commit()
+
 def value_cache_clean_one():
-    if len(value_cache) == 0: return
-    d = value_cache.popitem(False)
-    if not d[1].is_expired():
-        value_cache[d[0]]=d[1]
+    aged_ts = int(((time.time()-EPOCH) - VALUE_CACHE_MAXAGE) * 10000)
+    expired = expire_cache.items(0, aged_ts)
+    for ts, phash in expired:
+        del expire_cache[ts]
+        del value_cache[phash]
+        
 
 allc=string.maketrans('','')
 nodigs=allc.translate(allc, string.digits+".")
@@ -137,11 +181,11 @@ def generate_points(dlist):
         timestring = round_to_1(secs)+"s";
     
     # TODO: historic min, historic max?
-    y_shift = 0
+    y_shift = 0.0
     if min_val > 0 and min_val != max_val and (max_val - min_val) / max_val < 0.3 and len(data) > 20 and not ("%" in msg):
         y_shift = min_val
     else:
-        min_val = 0
+        min_val = 0.0
     
     # mid_val = (axis_max(max_val,neg_val) + y_shift) / 2
     max_val = axis_max(max_val-y_shift,neg_val)
@@ -276,10 +320,11 @@ def feeder(hashstr):
     if len(data) > 1024:
         return "" # TODO: return data error code
     if not hashstr in value_cache:
-        value_cache[hashstr] = ExpiringDeque()
-        value_cache[hashstr].append((data, time.time()));
+        value_cache[hashstr] = ExpiringDeque(hashstr)
+        value_cache[hashstr].append((data, int(time.time())))
+        value_cache[hashstr].update()
     else:
-        value_cache[hashstr].append((data,int(time.time())))
+        value_cache[hashstr].append((data, int(time.time())))
         value_cache[hashstr].update()
     if datastore: datastore.addData(hashstr, data)
     if not hashstr in subscriptions and not hashstr in tokenHashes: 
@@ -396,16 +441,13 @@ def parseOptions():
     return options, args, parser
 
 def shutdown():
-    global server
+    global server, conn, db
     print('Shutting down ...')
     server.stop(timeout=2)
-    print('Saving state ...')
-    t1=time.time()
-    dump_cache()
-    print "Cache dump took", time.time()-t1, "seconds"
+    transaction.commit()
+    conn.close()
+    db.close()
     if datastore: datastore.conn_close()
-    #dill.dump(value_cache, file("/var/spool/plottico_datacache.dat",'w'))
-    #exit(signal.SIGTERM)
 
 def dump_stats():
     try:
@@ -438,7 +480,6 @@ if __name__ == "__main__":
         print "Cache load took", time.time()-t1, "seconds"
     except IOError:
         print "Not loading value cache..."
-        pass
         
     print "Starting on port", port
     
