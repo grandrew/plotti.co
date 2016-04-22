@@ -58,6 +58,8 @@ if not dbroot.has_key('vc_ts'):
     dbroot['vc_ts'] = IOBTree()
 if not dbroot.has_key('lhosts'):
     dbroot['lhosts'] = OOBTree()
+if not dbroot.has_key('khosts'):
+    dbroot['khosts'] = OOBTree()
 
 EPOCH = 1461251697 # TODO: manage EPOCH rotation
 
@@ -67,6 +69,7 @@ global server
 value_cache = dbroot["vc"]
 expire_cache = dbroot["vc_ts"]
 lhosts = dbroot["lhosts"]
+khosts = dbroot["khosts"]
 
 image_views = 0
 updates_received = 0
@@ -109,6 +112,11 @@ def value_cache_clean_one():
     for ts, phash in expired:
         del expire_cache[ts]
         del value_cache[phash]
+        if phash in lhosts:
+            del lhosts[phash]
+        if phash in khosts:
+            del khosts[phash]
+    transaction.commit()
         
 
 allc=string.maketrans('','')
@@ -307,7 +315,7 @@ def lock(hashstr):
         ip = request.headers.getlist("X-Forwarded-For")[0]
     else:
         ip = request.remote_addr
-    if not hashstr in lhosts:
+    if hashstr not in lhosts and hashstr not in khosts:
         lhosts[hashstr] = ip
     return feeder(hashstr)
 
@@ -317,6 +325,18 @@ def feeder(hashstr):
     data = request.args.get('d')
     if not data:
         return plot(hashstr)
+    key = request.args.get('k', '')
+    if request.headers.getlist("X-Forwarded-For"):
+        ip = request.headers.getlist("X-Forwarded-For")[0]
+    else:
+        ip = request.remote_addr
+    if key and hashstr not in khosts and hashstr not in lhosts:
+        khosts[hashstr] = key
+    elif hashstr in khosts and key != khosts[hashstr]: 
+        abort(403)
+    elif hashstr in lhosts and ip != lhosts[hashstr]: 
+        abort(403)
+            
     if len(data) > 1024:
         return "" # TODO: return data error code
     if not hashstr in value_cache:
@@ -330,16 +350,7 @@ def feeder(hashstr):
     if not hashstr in subscriptions and not hashstr in tokenHashes: 
         # print "ERR: no subscribers, can not push", hashstr
         return ""
-    if request.headers.getlist("X-Forwarded-For"):
-        ip = request.headers.getlist("X-Forwarded-For")[0]
-    else:
-        ip = request.remote_addr
-    try:
-        if hashstr in lhosts and ip != lhosts[hashstr]: 
-            abort(403)
-            return ""
-    except KeyError:
-        return ""
+    
     def notify():
         global updates_pushed 
         updateHash = str(int(time.time()*1000))
