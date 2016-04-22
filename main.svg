@@ -102,7 +102,7 @@ function ev_process (e) {
     } else {
         // console.log("window is null");
     }
-    document.getElementById("nodata").innerHTML = "";
+    this.document.getElementById("nodata").innerHTML = "";
     var all_data = p_data.split(",").slice(0, 9);
     var el = this.document.createElementNS(this.xmlns,"g");
     var x = this.old_x + this.width / this.MAXPOINTS; // value used for generator (50 pts)
@@ -121,7 +121,7 @@ function ev_process (e) {
         this.tr_x = -(x-500); 
         this.tr.removeChild(this.tr.childNodes[0]);
     }
-    if(this.tr.childNodes.length) document.getElementById("singleVal").innerHTML="";
+    if(this.tr.childNodes.length) this.document.getElementById("singleVal").innerHTML="";
     
     var time_half = parseFloat(seconds - this.tr.childNodes[0].seconds) / parseFloat(x - this.tr.childNodes[0].xval) * parseFloat(500) / 2;
     avg_update_interval = parseFloat(seconds - this.tr.childNodes[0].seconds) / this.tr.childNodes.length;
