@@ -44,6 +44,31 @@ DBDIR = "/var/lib/plottico/"
 DBPATH = DBDIR+'PTValueCache.fs'
 mkdir_p(DBDIR)
 
+
+class ExpiringDeque(PersistentList):
+    def __init__(self, phash, d=[], maxlen=50):
+        super(ExpiringDeque, self).__init__(d)
+        self.maxlen = maxlen
+        self.phash = phash
+        self.ts = self.gen_ts()
+        for v in d:
+            self.append(v)
+        self.update()
+    def gen_ts(self):
+        return int((time.time()-EPOCH)*10000)
+    def append(self, d):
+        super(ExpiringDeque, self).append(d)
+        if len(self) > self.maxlen:
+            self.pop(0)
+    def update(self):
+        expire_cache = dbroot["vc_ts"]
+        if self.ts in expire_cache:
+            del expire_cache[self.ts]
+        self.ts = self.gen_ts()
+        expire_cache[self.ts] = self.phash
+
+
+
 # init DB
 storage = FileStorage.FileStorage(DBPATH)
 db = DB(storage)
@@ -96,27 +121,6 @@ updates_received = 0
 updates_pushed = 0
 
 
-class ExpiringDeque(PersistentList):
-    def __init__(self, phash, d=[], maxlen=50):
-        super(ExpiringDeque, self).__init__(d)
-        self.maxlen = maxlen
-        self.phash = phash
-        self.ts = self.gen_ts()
-        for v in d:
-            self.append(v)
-        self.update()
-    def gen_ts(self):
-        return int((time.time()-EPOCH)*10000)
-    def append(self, d):
-        super(ExpiringDeque, self).append(d)
-        if len(self) > self.maxlen:
-            self.pop(0)
-    def update(self):
-        expire_cache = dbroot["vc_ts"]
-        if self.ts in expire_cache:
-            del expire_cache[self.ts]
-        self.ts = self.gen_ts()
-        expire_cache[self.ts] = self.phash
 
 def value_cache_clean_one():
     value_cache = dbroot["vc"]
