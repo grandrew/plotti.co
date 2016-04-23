@@ -8,6 +8,7 @@ import gevent
 from gevent.wsgi import WSGIServer
 from gevent.queue import Queue
 
+
 from ZODB import FileStorage, DB
 import transaction
 from persistent import Persistent
@@ -15,25 +16,20 @@ from persistent.list import PersistentList
 from BTrees.IOBTree import IOBTree
 from BTrees.OOBTree import OOBTree
 
+
+import os.path
 sys.path.append("/opt/plotticohost")
 try:
     import datastore
     datastore.conn_open()
+    print "Initialized external datastore"
 except ImportError:
     datastore = None
 
 VALUE_CACHE_MAXAGE = 90000
 
-app = flask.Flask(__name__)
-cache = Cache(app,config={'CACHE_TYPE': 'simple'})
-
-subscriptions = {}
-tokenHashes = {}
-tokenSubscriptions = {}
-
 import errno    
 import os
-
 # http://stackoverflow.com/a/600612/2659616
 def mkdir_p(path):
     try:
@@ -45,8 +41,10 @@ def mkdir_p(path):
             raise
         
 DBDIR = "/var/lib/plottico/"
-DBPATH = DBDIR+'ValueCache.fs'
+DBPATH = DBDIR+'PTValueCache.fs'
 mkdir_p(DBDIR)
+
+# init DB
 storage = FileStorage.FileStorage(DBPATH)
 db = DB(storage)
 conn = db.open()
@@ -61,27 +59,42 @@ if not dbroot.has_key('lhosts'):
 if not dbroot.has_key('khosts'):
     dbroot['khosts'] = OOBTree()
 
+# used only once, then the cache file should be deleted!
+MCACHE = "/var/spool/plottico_datacache.dat"
+if os.path.isfile(MCACHE):
+    value_cache = dbroot["vc"]
+    j = marshal.load(file(MCACHE))
+    for k in j:
+        e = ExpiringDeque(k, j[k]["value"])
+        if not k in value_cache: value_cache[k] = e
+
+transaction.commit()
+conn.close()
+db.close()
+
+
+app = flask.Flask(__name__)
+cache = Cache(app,config={'CACHE_TYPE': 'simple'})
+app.config['ZODB_STORAGE'] = 'file://'+DBPATH
+from flask.ext.zodb import ZODB
+dbroot = ZODB(app)
+
+subscriptions = {}
+tokenHashes = {}
+tokenSubscriptions = {}
+
+
+
+
+
 EPOCH = 1461251697 # TODO: manage EPOCH rotation
 
-global value_cache
-global expire_cache
 global server
-value_cache = dbroot["vc"]
-expire_cache = dbroot["vc_ts"]
-lhosts = dbroot["lhosts"]
-khosts = dbroot["khosts"]
 
 image_views = 0
 updates_received = 0
 updates_pushed = 0
 
-# used only once, then the cache file should be deleted!
-def load_cache():
-    global value_cache
-    j = marshal.load(file("/var/spool/plottico_datacache.dat"))
-    for k in j:
-        e = ExpiringDeque(k, j[k]["value"])
-        if not k in value_cache: value_cache[k] = e
 
 class ExpiringDeque(PersistentList):
     def __init__(self, phash, d=[], maxlen=50):
@@ -99,14 +112,17 @@ class ExpiringDeque(PersistentList):
         if len(self) > self.maxlen:
             self.pop(0)
     def update(self):
-        global expire_cache
+        expire_cache = dbroot["vc_ts"]
         if self.ts in expire_cache:
             del expire_cache[self.ts]
         self.ts = self.gen_ts()
         expire_cache[self.ts] = self.phash
-        transaction.commit()
 
 def value_cache_clean_one():
+    value_cache = dbroot["vc"]
+    expire_cache = dbroot["vc_ts"]
+    lhosts = dbroot["lhosts"]
+    khosts = dbroot["khosts"]
     aged_ts = int(((time.time()-EPOCH) - VALUE_CACHE_MAXAGE) * 10000)
     expired = expire_cache.items(0, aged_ts)
     for ts, phash in expired:
@@ -116,7 +132,6 @@ def value_cache_clean_one():
             del lhosts[phash]
         if phash in khosts:
             del khosts[phash]
-    transaction.commit()
         
 
 allc=string.maketrans('','')
@@ -290,6 +305,11 @@ def plot(hashstr):
 #@cache.cached(timeout=500)
 @app.route( '/<hashstr>/<width>x<height>.svg' )
 def plotwh(hashstr,width,height):
+    value_cache = dbroot["vc"]
+    expire_cache = dbroot["vc_ts"]
+    lhosts = dbroot["lhosts"]
+    khosts = dbroot["khosts"]
+
     global image_views 
     value_cache_clean_one()
     svg = file('main.svg','r').read()
@@ -313,6 +333,8 @@ def plotwh(hashstr,width,height):
 
 @app.route('/lock/<hashstr>', methods=['GET'])
 def lock(hashstr):
+    lhosts = dbroot["lhosts"]
+    khosts = dbroot["khosts"]
     if request.headers.getlist("X-Forwarded-For"):
         ip = request.headers.getlist("X-Forwarded-For")[0]
     else:
@@ -323,6 +345,10 @@ def lock(hashstr):
 
 @app.route('/<hashstr>', methods=['GET'])
 def feeder(hashstr):
+    value_cache = dbroot["vc"]
+    lhosts = dbroot["lhosts"]
+    khosts = dbroot["khosts"]
+
     global updates_received 
     data = request.args.get('d')
     if not data:
@@ -454,13 +480,9 @@ def parseOptions():
     return options, args, parser
 
 def shutdown():
-    global server, conn, db
+    global server
     print('Shutting down ...')
-    transaction.commit()
     server.stop(timeout=2)
-    transaction.commit()
-    conn.close()
-    db.close()
     if datastore: datastore.conn_close()
 
 def dump_stats():
@@ -490,7 +512,6 @@ if __name__ == "__main__":
     
     try:
         t1=time.time()
-        load_cache()
         print "Cache load took", time.time()-t1, "seconds"
     except IOError:
         print "Not loading value cache..."
