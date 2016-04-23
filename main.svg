@@ -219,6 +219,7 @@ function check_heartbeat() {
     if(s_from_last_msg > check_intvl * 2) {
         //this.tr.lastChild.seconds = ct; // protect from looping
         document.getElementById("nodata").innerHTML = "&#xf071;";
+        document.getElementById("LATEMSG").innerHTML = (Math.round(s_from_last_msg/60 * 10) / 10) + " minutes late";
         if(ct - last_subscribed > 10) {
             // console.log("RESUB: "+(ct - last_subscribed));
             _do_es();
@@ -438,7 +439,7 @@ body, html {
 <text x="-5" y="79" text-anchor="end" id="valueMid" style="font-size: 18px">$VALUEMID</text>
 <text x="250" y="170" text-anchor="middle" id="timeMid" style="font-size: 18px">$TIMEMID</text>
 <text x="-5" y="155" text-anchor="end" id="zeroax" style="font-size: 18px">$ZERO</text>
-<g><title>No data stream</title>
+<g><title id="LATEMSG">$LATE</title>
 <text x="485" y="140" text-anchor="middle" id="nodata" style="font-size: 30px;fill: orange;font-family: FontAwesome;cursor: default;">$NODATA</text>
 </g>
 <svg class="axis">
