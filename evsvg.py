@@ -456,6 +456,7 @@ def parseOptions():
 def shutdown():
     global server, conn, db
     print('Shutting down ...')
+    transaction.commit()
     server.stop(timeout=2)
     transaction.commit()
     conn.close()
