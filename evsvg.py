@@ -27,6 +27,7 @@ except ImportError:
     datastore = None
 
 VALUE_CACHE_MAXAGE = 90000
+EPOCH = 1461251697 # TODO: manage EPOCH rotation
 
 import errno    
 import os
@@ -112,7 +113,6 @@ tokenSubscriptions = {}
 
 
 
-EPOCH = 1461251697 # TODO: manage EPOCH rotation
 
 global server
 
