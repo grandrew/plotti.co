@@ -65,7 +65,7 @@ class ExpiringDeque(PersistentList):
         self.ts = self.gen_ts()
         for v in d:
             self.append(v)
-        self.update()
+        #self.update()
     def gen_ts(self):
         return int((time.time()-EPOCH)*10000)
     def append(self, d):
