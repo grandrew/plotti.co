@@ -538,7 +538,7 @@ def shutdown():
 def dump_stats():
     try:
         fs = file("/tmp/plottico_stats","w")
-        fs.write("%s\n%s\n%s\n%s\n%s\n" % (image_views, updates_received, updates_pushed, len(subscriptions), len(value_cache)))
+        fs.write("%s\n%s\n%s\n%s\n%s\n" % (image_views, updates_received, updates_pushed, len(subscriptions), 0))
         fs.flush()
         fs.close()
     except IOError:
