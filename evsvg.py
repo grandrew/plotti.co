@@ -358,11 +358,6 @@ def plot(hashstr):
 #@cache.cached(timeout=500)
 @app.route( '/<hashstr>/<width>x<height>.svg' )
 def plotwh(hashstr,width,height):
-    value_cache = dbroot["vc"]
-    expire_cache = dbroot["vc_ts"]
-    lhosts = dbroot["lhosts"]
-    khosts = dbroot["khosts"]
-
     global image_views 
     value_cache_clean_one()
     svg = file('main.svg','r').read()
