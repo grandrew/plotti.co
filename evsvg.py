@@ -1,6 +1,6 @@
 import gevent.monkey
 gevent.monkey.patch_all()
-import flask, time, optparse, string, re, signal, marshal, traceback, sys
+import flask, time, optparse, string, re, signal, marshal, traceback, sys, json
 import math as Math
 from flask import request, abort
 from flask.ext.cache import Cache
@@ -9,12 +9,22 @@ from gevent.wsgi import WSGIServer
 from gevent.queue import Queue
 
 
+
+
+
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+import datetime
+
 from ZODB import FileStorage, DB
 import transaction
 from persistent import Persistent
 from persistent.list import PersistentList
 from BTrees.IOBTree import IOBTree
 from BTrees.OOBTree import OOBTree
+
+
+
 
 
 import os.path
@@ -46,6 +56,7 @@ DBPATH = DBDIR+'PTValueCache.fs'
 mkdir_p(DBDIR)
 
 
+# TODO: remove this?
 class ExpiringDeque(PersistentList):
     def __init__(self, phash, d=[], maxlen=50):
         super(ExpiringDeque, self).__init__(d)
@@ -70,10 +81,54 @@ class ExpiringDeque(PersistentList):
 
 
 
+app = flask.Flask(__name__)
+cache = Cache(app,config={'CACHE_TYPE': 'simple'})
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'+DBDIR+"/PTValueCache.sqlite"
+db = SQLAlchemy(app)
+
+
+
+class CachedData(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    phash = db.Column(db.String(80), unique=True)
+    ts = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    data = db.Column(db.String(300*50), unique=False)
+    maxlen = db.Column(db.Integer)
+    updateIP = db.Column(db.String(80), unique=False)
+    updateKey = db.Column(db.String(80), unique=False)
+    
+    def update(self):
+        self.ts = datetime.datetime.utcnow()
+    
+    def append(self, d):
+        data = json.loads(self.data)
+        data.append(d)
+        if len(data) > self.maxlen:
+            data.pop(0)
+        self.data = json.dumps(data, ensure_ascii=False)
+    
+    def __list__(self):
+        return json.loads(self.data)
+    
+    def __iter__(self):
+        return iter(json.loads(self.data))
+
+    def __init__(self, phash, d=[], maxlen=50):
+        self.maxlen = maxlen
+        self.phash = phash
+        self.data = json.dumps(d, ensure_ascii=False)
+        self.updateKey = ""
+        self.updateIP = ""
+    
+    def __repr__(self):
+        return '<Data %r k %s/%s>' % (self.phash, self.updateIP, self.updateKey)
+
+db.create_all()
+
 # init DB
 storage = FileStorage.FileStorage(DBPATH)
-db = DB(storage)
-conn = db.open()
+zdb = DB(storage)
+conn = zdb.open()
 dbroot = conn.root()
 
 if not dbroot.has_key('vc'):
@@ -94,48 +149,32 @@ if os.path.isfile(MCACHE):
         e = ExpiringDeque(k, j[k]["value"])
         if not k in value_cache: value_cache[k] = e
 
-transaction.commit()
+for k,v in dbroot['vc'].items():
+    cd = CachedData.query.filter_by(phash=k).first()
+    if cd: continue
+    cd = CachedData(k, list(v))
+    db.session.add(cd)
+db.session.commit()
+
 conn.close()
-db.close()
+zdb.close()
 
 
-app = flask.Flask(__name__)
-cache = Cache(app,config={'CACHE_TYPE': 'simple'})
-app.config['ZODB_STORAGE'] = 'file://'+DBPATH
-from flask.ext.zodb import ZODB
-dbroot = ZODB(app)
 
 subscriptions = {}
 tokenHashes = {}
 tokenSubscriptions = {}
 
-
-
-
-
-
-global server
-
 image_views = 0
 updates_received = 0
 updates_pushed = 0
 
-
-
 def value_cache_clean_one():
-    value_cache = dbroot["vc"]
-    expire_cache = dbroot["vc_ts"]
-    lhosts = dbroot["lhosts"]
-    khosts = dbroot["khosts"]
-    aged_ts = int(((time.time()-EPOCH) - VALUE_CACHE_MAXAGE) * 10000)
-    expired = expire_cache.items(0, aged_ts)
-    for ts, phash in expired:
-        del expire_cache[ts]
-        del value_cache[phash]
-        if phash in lhosts:
-            del lhosts[phash]
-        if phash in khosts:
-            del khosts[phash]
+    expired = CachedData.query.filter_by(ts=(datetime.datetime.utcnow() - datetime.timedelta(seconds=-90000))).all()
+    for d in expired:
+        db.session.delete(d)
+    db.session.commit()
+        
         
 
 allc=string.maketrans('','')
@@ -318,10 +357,12 @@ def plotwh(hashstr,width,height):
     value_cache_clean_one()
     svg = file('main.svg','r').read()
     trdn = 20
-    if hashstr in value_cache:
+    cd = CachedData.query.filter_by(phash=hashstr).first()
+    if cd:
         try:
-            max_val, valueMid, timeMid, secondsMid, neg_val, msg, points, y_shift, valueMin, l_y, nodata, avg_upd, late = generate_points(value_cache[hashstr])
-            value_cache[hashstr].update()
+            max_val, valueMid, timeMid, secondsMid, neg_val, msg, points, y_shift, valueMin, l_y, nodata, avg_upd, late = generate_points(list(cd))
+            cd.update()
+            db.session.commit()
             if neg_val: trdn -= 68
             svg = apply_template(svg, {"MAXPOINTS":MAXPOINTS, "TRDN": trdn, "MSG":msg, "VALUEMID":valueMid, "TIMEMID":timeMid, "DATAPOINTS":points, "INIT_MAX_Y": max_val, "MAX_Y": max_val, "SECONDS_SCALE": secondsMid, "Y_SHIFT": y_shift, "ZERO": valueMin, "L_Y":l_y, "NODATA":nodata, "AVG_UPD": avg_upd, "LATE": late}) # TODO templating engine
         except:
@@ -337,22 +378,26 @@ def plotwh(hashstr,width,height):
 
 @app.route('/lock/<hashstr>', methods=['GET'])
 def lock(hashstr):
-    lhosts = dbroot["lhosts"]
-    khosts = dbroot["khosts"]
+    cd = CachedData.query.filter_by(phash=hashstr).first()
+    if not cd:
+        cd = CachedData(hashstr)
+        db.session.add(cd)
     if request.headers.getlist("X-Forwarded-For"):
         ip = request.headers.getlist("X-Forwarded-For")[0]
     else:
         ip = request.remote_addr
-    if hashstr not in lhosts and hashstr not in khosts:
-        lhosts[hashstr] = ip
-    return feeder(hashstr)
+    if cd and not cd.updateKey and not cd.updateIP:
+        cd.updateIP = ip
+    return feeder(hashstr, cd)
 
 @app.route('/<hashstr>', methods=['GET'])
-def feeder(hashstr):
-    value_cache = dbroot["vc"]
-    lhosts = dbroot["lhosts"]
-    khosts = dbroot["khosts"]
-
+def feeder(hashstr, cd=None):
+    if not cd:
+        cd = CachedData.query.filter_by(phash=hashstr).first()
+    if not cd:
+        cd = CachedData(hashstr)
+        db.session.add(cd)
+        
     global updates_received 
     data = request.args.get('d')
     if not data:
@@ -362,22 +407,18 @@ def feeder(hashstr):
         ip = request.headers.getlist("X-Forwarded-For")[0]
     else:
         ip = request.remote_addr
-    if key and hashstr not in khosts and hashstr not in lhosts:
-        khosts[hashstr] = key
-    elif hashstr in khosts and key != khosts[hashstr]: 
+    if key and not cd.updateKey and not cd.updateIP:
+        cd.updateKey = key
+    elif cd.updateKey and key != cd.updateKey:
         abort(403)
-    elif hashstr in lhosts and ip != lhosts[hashstr]: 
+    elif cd.updateIP and ip != cd.updateIP:
         abort(403)
-            
-    if len(data) > 1024:
-        return "" # TODO: return data error code
-    if not hashstr in value_cache:
-        value_cache[hashstr] = ExpiringDeque(hashstr)
-        value_cache[hashstr].append((data, int(time.time())))
-        value_cache[hashstr].update()
-    else:
-        value_cache[hashstr].append((data, int(time.time())))
-        value_cache[hashstr].update()
+        
+    if len(data) > 300:
+        abort(500)
+    cd.append((data, int(time.time())))
+    cd.update()
+    db.session.commit()
     if datastore: datastore.addData(hashstr, data)
     if not hashstr in subscriptions and not hashstr in tokenHashes: 
         # print "ERR: no subscribers, can not push", hashstr
