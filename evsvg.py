@@ -174,8 +174,17 @@ def value_cache_clean_one():
     for d in expired:
         db.session.delete(d)
     db.session.commit()
-        
-        
+
+
+
+from sqlalchemy.engine import Engine
+from sqlalchemy import event
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA synchronous=OFF")
+    cursor.close()
 
 allc=string.maketrans('','')
 nodigs=allc.translate(allc, string.digits+".")
