@@ -55,7 +55,7 @@ DBDIR = "/var/lib/plottico/"
 DBPATH = DBDIR+'PTValueCache.fs'
 mkdir_p(DBDIR)
 
-
+"""
 # TODO: remove this?
 class ExpiringDeque(PersistentList):
     def __init__(self, phash, d=[], maxlen=50):
@@ -78,7 +78,7 @@ class ExpiringDeque(PersistentList):
             del expire_cache[self.ts]
         self.ts = self.gen_ts()
         expire_cache[self.ts] = self.phash
-
+"""
 
 
 app = flask.Flask(__name__)
@@ -125,6 +125,7 @@ class CachedData(db.Model):
 
 db.create_all()
 
+"""
 # init DB
 storage = FileStorage.FileStorage(DBPATH)
 zdb = DB(storage)
@@ -158,7 +159,7 @@ db.session.commit()
 
 conn.close()
 zdb.close()
-
+"""
 
 
 subscriptions = {}
