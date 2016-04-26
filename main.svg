@@ -1,6 +1,7 @@
 <?xml-stylesheet type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="chart" height="210" width="610" viewBox="0 0 610 210" preserveAspectRatio="none" onload="init()">
 <script type="text/javascript" charset="utf-8">
+// <![CDATA[
 
 var ptoken = Math.random().toString(36).slice(2);
 // if(document.cookie.indexOf("ptoken") == -1) document.cookie = "ptoken="+ptoken; // seems that object does not support cookies?
@@ -45,6 +46,10 @@ Math.log10 = Math.log10 || function(x) {
 
 function round_to_1(x) {
     return parseFloat((x).toPrecision(1))
+}
+
+function htmlEntities(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function T(time_half) {
@@ -245,7 +250,7 @@ function gen_pt(i, ydata, x) {
     var y_data = parseFloat(ydata) - this.y_shift; 
     var txt = ydata.replace(RegExp("[\\d.,]+"),"");
     if(txt.length) {
-        this.document.getElementById("msg").innerHTML=txt;
+        this.document.getElementById("msg").innerHTML=htmlEntities(txt);
     }
     var max_y_c = this.max_y;
     if(0 > this.trdn) {
@@ -339,7 +344,7 @@ function renderImage() {
     var svg_xml = (new XMLSerializer()).serializeToString(document.documentElement);
     img.src="data:image/svg+xml;base64,"+btoa(unescape(encodeURIComponent(svg_xml)));
 }
-
+// ]]>
 </script>
 <style>
 
