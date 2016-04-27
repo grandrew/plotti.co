@@ -353,11 +353,13 @@ def preview():
 #@cache.cached(timeout=500)
 @app.route( '/<hashstr>/plot.svg' )
 def plot(hashstr):
+    if len(hashstr) > 80: abort(500)
     return plotwh(hashstr,0,0)
 
 #@cache.cached(timeout=500)
 @app.route( '/<hashstr>/<width>x<height>.svg' )
 def plotwh(hashstr,width,height):
+    if len(hashstr) > 80: abort(500)
     global image_views 
     value_cache_clean_one()
     svg = file('main.svg','r').read()
@@ -383,6 +385,7 @@ def plotwh(hashstr,width,height):
 
 @app.route('/lock/<hashstr>', methods=['GET'])
 def lock(hashstr):
+    if len(hashstr) > 80: abort(500)
     cd = CachedData.query.filter_by(phash=hashstr).first()
     if not cd:
         cd = CachedData(hashstr)
@@ -397,6 +400,7 @@ def lock(hashstr):
 
 @app.route('/<hashstr>', methods=['GET'])
 def feeder(hashstr, cd=None):
+    if len(hashstr) > 80: abort(500)
     if not cd:
         cd = CachedData.query.filter_by(phash=hashstr).first()
     if not cd:
@@ -459,6 +463,7 @@ def feeder(hashstr, cd=None):
 
 @app.route('/<hashstr>/stream', methods=['GET'])
 def stream(hashstr):
+    if len(hashstr) > 80: abort(500)
     # ptoken = request.cookies.get('ptoken', '')
     ptoken = request.values.get("ptoken", "")
     # print "STREAM request: ptoken is ", ptoken, " for hash", hashstr
