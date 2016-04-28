@@ -342,6 +342,11 @@ def index():
     return flask.Response( file('plotti.co/_site/index.html','r').read(),  mimetype= 'text/html')
     
 @cache.cached(timeout=500)
+@app.route( '/favicon.ico' )
+def favicon():
+    return flask.Response( file('favicon.ico','rb').read(),  mimetype= 'image/x-icon')
+    
+@cache.cached(timeout=500)
 @app.route( '/eventsource.min.js' )
 def es():
     return flask.Response( file('eventsource.min.js','r').read(),  mimetype= 'text/javascript')
