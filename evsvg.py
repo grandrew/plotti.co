@@ -1,15 +1,13 @@
 import gevent.monkey
 gevent.monkey.patch_all()
-import flask, time, optparse, string, re, signal, marshal, traceback, sys, json
+import flask, time, optparse, string, re, signal, marshal, traceback, sys, json, socket
 import math as Math
 from flask import request, abort
 from flask.ext.cache import Cache
 import gevent
 from gevent.wsgi import WSGIServer
 from gevent.queue import Queue
-
-
-
+from gevent.server import DatagramServer
 
 
 from flask import Flask
@@ -22,9 +20,6 @@ from persistent import Persistent
 from persistent.list import PersistentList
 from BTrees.IOBTree import IOBTree
 from BTrees.OOBTree import OOBTree
-
-
-
 
 
 import os.path
@@ -55,38 +50,13 @@ DBDIR = "/var/lib/plottico/"
 DBPATH = DBDIR+'PTValueCache.fs'
 mkdir_p(DBDIR)
 
-"""
-# TODO: remove this?
-class ExpiringDeque(PersistentList):
-    def __init__(self, phash, d=[], maxlen=50):
-        super(ExpiringDeque, self).__init__(d)
-        self.maxlen = maxlen
-        self.phash = phash
-        self.ts = self.gen_ts()
-        for v in d:
-            self.append(v)
-        #self.update()
-    def gen_ts(self):
-        return int((time.time()-EPOCH)*10000)
-    def append(self, d):
-        super(ExpiringDeque, self).append(d)
-        if len(self) > self.maxlen:
-            self.pop(0)
-    def update(self):
-        expire_cache = dbroot["vc_ts"]
-        if self.ts in expire_cache:
-            del expire_cache[self.ts]
-        self.ts = self.gen_ts()
-        expire_cache[self.ts] = self.phash
-"""
-
-
 app = flask.Flask(__name__)
 cache = Cache(app,config={'CACHE_TYPE': 'simple'})
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'+DBDIR+"/PTValueCache.sqlite"
 db = SQLAlchemy(app)
-
-
+global udpserver, lupeers
+udpserver = None # Update server
+lupeers = []
 
 class CachedData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -125,43 +95,6 @@ class CachedData(db.Model):
 
 db.create_all()
 
-"""
-# init DB
-storage = FileStorage.FileStorage(DBPATH)
-zdb = DB(storage)
-conn = zdb.open()
-dbroot = conn.root()
-
-if not dbroot.has_key('vc'):
-    dbroot['vc'] = OOBTree()
-if not dbroot.has_key('vc_ts'):
-    dbroot['vc_ts'] = IOBTree()
-if not dbroot.has_key('lhosts'):
-    dbroot['lhosts'] = OOBTree()
-if not dbroot.has_key('khosts'):
-    dbroot['khosts'] = OOBTree()
-
-# used only once, then the cache file should be deleted!
-MCACHE = "/var/spool/plottico_datacache.dat"
-if os.path.isfile(MCACHE):
-    value_cache = dbroot["vc"]
-    j = marshal.load(file(MCACHE))
-    for k in j:
-        e = ExpiringDeque(k, j[k]["value"])
-        if not k in value_cache: value_cache[k] = e
-
-for k,v in dbroot['vc'].items():
-    cd = CachedData.query.filter_by(phash=k).first()
-    if cd: continue
-    cd = CachedData(k, list(v))
-    db.session.add(cd)
-db.session.commit()
-
-conn.close()
-zdb.close()
-"""
-
-
 subscriptions = {}
 tokenHashes = {}
 tokenSubscriptions = {}
@@ -175,8 +108,6 @@ def value_cache_clean_one():
     for d in expired:
         db.session.delete(d)
     db.session.commit()
-
-
 
 from sqlalchemy.engine import Engine
 from sqlalchemy import event
@@ -283,8 +214,6 @@ def generate_points(dlist):
     if min_val > 0: min_val = round(min_val, 2); # TODO: think here and in SVG, 3-d precision is when v < 0.3 https://github.com/grandrew/plotti.co/issues/11
     if mid_idx > 0: min_val = round(min_val, 1);
     valueMin = "%s%s" % (strip_0(min_val), SUPS[mid_idx])
-    
-    
     points = ""
     oldx = 0
     x = 0
@@ -430,6 +359,18 @@ def feeder(hashstr, cd=None):
         
     if len(data) > 300:
         abort(500)
+    for peer in lupeers:
+        usock.sendto(json.dumps({"h": hashstr, "d": data}), peer)
+    return push_update(hashstr, data, cd)
+    
+def push_update(hashstr, data, cd=None):
+    # TODO: split data cache?
+    if not cd:
+        cd = CachedData.query.filter_by(phash=hashstr).first()
+    if not cd:
+        cd = CachedData(hashstr)
+        db.session.add(cd)
+    
     cd.append((data, int(time.time())))
     cd.update()
     db.session.commit()
@@ -536,13 +477,18 @@ def parseOptions():
                       metavar='DEBUG', help='Debugging state')
     parser.add_option('--host', dest='host', metavar='HOST',
                       help='host server address')
+    parser.add_option('--listen-udp', dest='listen_udp', metavar='UDPLISTEN',
+                      help='Listen for local updates at UDP IP:PORT. Use with caution.')
+    parser.add_option('--send-udp', dest='send_udp', metavar='UDPSND',
+                      help='Duplicate all updates to UDP "IP1:PORT1 IP2:PORT2 ..."')
     options, args = parser.parse_args()
     return options, args, parser
 
 def shutdown():
-    global server
+    global server, udpserver
     print('Shutting down ...')
     server.stop(timeout=2)
+    if udpserver: udpserver.stop(timeout=2)
     if datastore: datastore.conn_close()
 
 def dump_stats():
@@ -557,8 +503,17 @@ def dump_stats():
 gevent.signal(signal.SIGTERM, shutdown)
 gevent.signal(signal.SIGUSR1, dump_stats)
 
+class UpdateServer(DatagramServer):
+    def handle(self, data, address): # pylint:disable=method-hidden
+        try:
+            j = json.loads(data)
+        except ValueError:
+            print "Cannot decode update message from %s - %s bytes" % (address[0], len(data))
+        push_update(j["h"], j["d"])
+
 if __name__ == "__main__":
-    global server
+    global server, udpserver, usock, lupeers
+    udpserver = None
     opt, args, parser = parseOptions()
     debug = False
     port=80
@@ -569,6 +524,13 @@ if __name__ == "__main__":
         port=int(opt.port)
     if opt.host:
         host=opt.host
+    if opt.send_udp:
+        usock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        udp_peers = opt.send_udp.split(" ")
+        for upeer in udp_peers: lupeers.append((upeer.split(":")[0], int(upeer.split(":")[1])))
+    if opt.listen_udp:
+        udpserver = UpdateServer(opt.listen_udp)
+        udpserver.start()
     
     try:
         t1=time.time()
@@ -578,7 +540,6 @@ if __name__ == "__main__":
         
     print "Starting on port", port
     
-
     app.debug = debug
     if debug: server = WSGIServer((host, port), app)
     else: server = WSGIServer((host, port), app, log=None)
