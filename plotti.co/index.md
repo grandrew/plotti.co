@@ -166,6 +166,8 @@ p.replaceChild(o,limg[il]);}}}, 1000); },false);
 
 If you want to lock a single host IP address as a feeder of the data so that no other IP can send to your hash - you can use the path `http://plotti.co/lock/YOUR_HASH?d=1,2,3`. After executing this request the sender will be locked for this hash. The hash locks get dropped eventually, so keep using this address to continue holding the lock.
 
+Plottico now also supports `&k=KEY` request parameter to lock to specified key. Key takes preference over IP lock, if this hash was not locked by IP before. Use as `wget -q -O /dev/null "http://plotti.co/YOUR_HASH?d=1,2,3&k=YOUR_KEY"`.
+
 ### HTTPS
 
 [plotti.co](https://plotti.co) supports https!
