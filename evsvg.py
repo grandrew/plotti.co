@@ -340,7 +340,6 @@ def feeder(hashstr, cd=None):
         cd = CachedData(hashstr)
         db.session.add(cd)
         
-    global updates_received 
     data = request.args.get('d')
     if not data:
         return plot(hashstr)
@@ -363,6 +362,7 @@ def feeder(hashstr, cd=None):
     return push_update(hashstr, data, cd)
     
 def push_update(hashstr, data, cd=None):
+    global updates_received 
     # TODO: split data cache?
     if not cd:
         cd = CachedData.query.filter_by(phash=hashstr).first()
