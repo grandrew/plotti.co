@@ -54,7 +54,6 @@ app = flask.Flask(__name__)
 cache = Cache(app,config={'CACHE_TYPE': 'simple'})
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'+DBDIR+"/PTValueCache.sqlite"
 db = SQLAlchemy(app)
-global udpserver, lupeers
 udpserver = None # Update server
 lupeers = []
 
@@ -512,7 +511,6 @@ class UpdateServer(DatagramServer):
         push_update(j["h"], j["d"])
 
 if __name__ == "__main__":
-    global server, udpserver, usock, lupeers
     udpserver = None
     opt, args, parser = parseOptions()
     debug = False
