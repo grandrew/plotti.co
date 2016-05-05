@@ -94,6 +94,9 @@ class CachedData(db.Model):
 
 db.create_all()
 
+db.session.query(CachedData).update({CachedData.updateIP: ""}) # clear all locks at restart
+db.session.commit()
+
 subscriptions = {}
 tokenHashes = {}
 tokenSubscriptions = {}
