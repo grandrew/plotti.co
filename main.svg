@@ -250,7 +250,7 @@ var reloadTimer = setInterval(condReload, parseInt(2*60*1000+Math.random()*3*60*
 
 function gen_pt(i, ydata, x) {
     var y_data = parseFloat(ydata) - this.y_shift; 
-    var txt = ydata.replace(RegExp("[\\d.,]+"),"");
+    var txt = ydata.replace(RegExp("[-\\d.,]+"),"");
     if(txt.length) {
         this.document.getElementById("msg").innerHTML=htmlEntities(txt);
     }
