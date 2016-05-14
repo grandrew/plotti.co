@@ -132,7 +132,7 @@ def parseFloat(txt):
             return float(txt.translate(translate_table))
         except ValueError:
             return None
-rmsg = re.compile("[\\d.,]+")
+rmsg = re.compile("[-\\d.,]+")
 SUPS=["","k","M","G","T","e"]
 SUPS_LEN = len(SUPS)
 MAXPOINTS = 50
@@ -171,7 +171,7 @@ def generate_points(dlist):
         if m < neg_val:
             neg_val = m
         data.append(vals)
-        msgc = rmsg.sub("", d[0])
+        msgc = rmsg.sub("", d[0], 1)
         if msgc: msg = msgc
     time_half = (dlist[-1][1] / len(dlist) - dlist[0][1] / len(dlist)) * MAXPOINTS / 2
     avg_upd = (dlist[-1][1] - dlist[0][1]) / len(dlist)
