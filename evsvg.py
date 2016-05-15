@@ -409,6 +409,14 @@ def push_update(hashstr, data, cd=None):
     updates_received += 1
     return flask.Response('<svg xmlns="http://www.w3.org/2000/svg"></svg>', mimetype= 'image/svg+xml', headers={'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache'})
 
+@app.route('/<hashstr>/last', methods=['GET'])
+def last(hashstr):
+    if len(hashstr) > 80: abort(500)
+    cd = CachedData.query.filter_by(phash=hashstr).first()
+    if cd:
+        return list(cd)[-1][0]
+    abort(404)
+    
 @app.route('/<hashstr>/stream', methods=['GET'])
 def stream(hashstr):
     if len(hashstr) > 80: abort(500)
