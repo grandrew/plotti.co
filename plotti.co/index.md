@@ -6,7 +6,7 @@ layout: default
 
 Live plotting that **just works**.
 
-<br/><object id="live1" data="https://plotti.co/plotti.co/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"/>
+<br/><object data="https://plotti.co/random_sample" type="image/svg+xml" style="width: 570px; height: 190px;"/>
 
 Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that generates live-streaming SVG-image plots to be embedded as an `<object>` tag of your web page. That simple.
 
@@ -97,14 +97,14 @@ done
 
 ### More examples
 
-More examples can be found in the [wiki](https://github.com/grandrew/plotti.co/wiki/Cool-usage-examples)
+More examples can be found in the [plottico copy-paste snippets portal](https://doc.plotti.co)
 
 ## Explanation
 
 To feed some data into the stream, you just create a `GET` request of the following form:
 
 ~~~sh
-$ wget "http://plotti.co/YOUR_HASH?d=1.5,3.6,7.8mbps" -O /dev/null
+$ wget "http://plotti.co/YOUR_HASH?d=1.5,3.6,7.8,mbps" -O /dev/null
 ~~~
 
 the format of the request is 
@@ -113,7 +113,7 @@ the format of the request is
 ?d=[value_blue],[value_red],...
 ~~~
 
-Where each `[value_X]` is a separate line drawn on the plot. You may optionally append units as short string to any of the data values to show it as "y" axis units or just as a general message.
+Where each `[value_X]` is a separate line drawn on the plot. You may optionally append units as short string to the list or any of the data values to show it as "y" axis units or just as a general message.
 
 ### Choosing size
 
@@ -175,11 +175,9 @@ Plottico now also supports `&k=KEY` request parameter to lock to specified key. 
 ## Limitations
 
 - Data feed rate is limited to 50 updates/sec per host. Please request if you need more
-- Your cached data will be deleted after 1 hour of idling (no updates or views)
-- The server is stateless and will drop locks on restart ([fixing asap](https://github.com/grandrew/plotti.co/issues/14))
-- You can not have more than 6 plots streaming in one browser (working on it)
+- Your cached data will be deleted after about 1 day of idling (no updates or views)
+- The server is stateless and will drop locks on restart ([fix in progress](https://github.com/grandrew/plotti.co/issues/14))
 - There are some known [bugs](https://github.com/grandrew/plotti.co/issues)
-- Microsoft Edge does not support EventSource [yet](http://caniuse.com/#search=EventSource), but a workaround is [implemented](https://github.com/grandrew/plotti.co/issues/13).
 
 ## Terms of serve and privacy
 
@@ -232,7 +230,7 @@ You can send any feedback and suggestions to ag@vrayo.com or realgrandrew@gmail.
 
 <script>
 my_hash=Math.random()*100000000;
-document.getElementById("live1").setAttribute("data", "https://plotti.co/"+my_hash+"/plot.svg");
+// document.getElementById("live1").setAttribute("data", "https://plotti.co/"+my_hash+"/plot.svg");
 y1=0
 y2=0
 y3=0
@@ -258,10 +256,6 @@ function makeid()
     return text;
 }
 YH = makeid();
-
-function feed() {
-       
-}
 
 document.getElementById("yhimg").setAttribute("data", "https://plotti.co/"+YH+"/plot.svg");
 document.getElementById("yhref").innerHTML="http://plotti.co/"+YH+".svg?d=,,2";
@@ -301,9 +295,7 @@ window.addEventListener("load", function load(event) {
             o.setAttribute("class", cl); o.setAttribute("style", st);
             p.replaceChild(o,limg[il]);}}}, 1000); },false);
 
-
-
-setInterval(pushData, 300);
+//setInterval(pushData, 300);
 </script>
 
 <script>
