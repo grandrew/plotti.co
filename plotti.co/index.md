@@ -4,11 +4,11 @@ layout: default
 
 {::options parse_block_html="true" /}
 
-Live plotting that **just works**.
+Live plotting that **just works** <br/>and helps you fight with machines.
 
 <br/><object data="https://plotti.co/random_sample" type="image/svg+xml" style="width: 570px; height: 190px;"/>
 
-Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that generates live-streaming SVG-image plots to be embedded as an `<object>` tag of your web page. That simple.
+Plottico is a [microservice](https://en.wikipedia.org/wiki/Microservices) that generates live-streaming SVG-image plots to be embedded as an `<object>` tag.
 
 <iframe src="https://ghbtns.com/github-btn.html?user=grandrew&amp;repo=plotti.co&amp;type=watch&amp;count=true&amp;size=large"
   allowtransparency="true" frameborder="0" scrolling="0" width="170" height="30"></iframe>
@@ -25,7 +25,10 @@ data-layout="button_count" style="display: inline-block;">
 
 <br/>
 
-*Now supporting data cache and static `<img>`*
+*Now introducing Plottico Tracker web browser extension*
+
+<object class="image_full" data="https://doc.plotti.co/tracker_intro.svg" type="image/svg+xml" style="overflow: visible; margin-left: -300px;"/>
+<object class="image_mobile" data="https://doc.plotti.co/tracker_intro_mobile.svg" type="image/svg+xml" style="overflow: visible; margin-left: 0px;"/>
 
 ## Usage
 
@@ -41,11 +44,11 @@ where `YOUR_HASH.svg` is the hash you chose for your stream, `.svg` is optional.
 
 here it is:
 
-<object id="yhimg" data="https://plotti.co/YOUR_HASH/plot.svg" type="image/svg+xml" style="width: 570px; height: 190px;"></object>
+<object id="yhimg" data="https://plotti.co/YOUR_HASH/plot.svg" type="image/svg+xml" style="width: 400px; height: 100px;"></object>
 
 You may also use a `<img src="http://plotti.co/YOUR_HASH.svg"/>` but in this case you won't get live updates, just a pre-cached plot with latest data.
 
-### Feeding the data to the image
+### Feeding the data to the image programmatically
 
 Just a simple GET to the same hash with an argument `d`:
 
@@ -56,6 +59,22 @@ http://plotti.co/YOUR_HASH.svg?d=<value>,<value>,...
 You can try it by clicking here:
 
 <a id="yhref" onclick="feed()">http://plotti.co/YOUR_HASH.svg?d=,,2</a>
+
+### Feeding the data from external website
+
+Use [Plottico Tracker Pro](https://chrome.google.com/webstore/detail/plottico-tracker-pro/hjfkpgknlchgabgfhknaedgodmnhieep) to send updates from websites to your favorite mission control dashboard using Chrome Web Browser.
+No coding required.
+
+<video width="600" height="420" autoplay loop>
+  <source src="https://doc.plotti.co/plottico-mini.webm" type="video/webm" />
+  <source src="https://doc.plotti.co/plottico-mini.mp4" type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
+
+### Get your data back
+
+You can get latest submitted data by doing a GET to `https://plotti.co/YOUR_HASH/last`. Alternatively, you can use EventSource API directly to get the data in real-time, as it arrives. 
+Here are [bash](https://doc.plotti.co/Bash-EventSource-API/) and [python](https://doc.plotti.co/Python-EventSource-API/) examples. It is extremely simple.
 
 ## Quick examples
 
@@ -70,34 +89,15 @@ done
 
 <img src="https://plotti.co/plottycocpu" style="width: 570px; height: 190px;"/>
 
-### Network load on plottico
+### Bitcoin price
 
-~~~sh
-#!/bin/sh
-S=1; F=/sys/class/net/eth0/statistics/tx_bytes
-while true; do
-  X=`cat $F`; sleep $S; Y=`cat $F`; BPS="$(((Y-X)/S*8))";
-  wget http://plotti.co/lock/plotticonet?d=${BPS}bps -q -O /dev/null
-done
-~~~
+Fed using [Plottico Tracker Pro](https://chrome.google.com/webstore/detail/plottico-tracker-pro/hjfkpgknlchgabgfhknaedgodmnhieep) from [preev.com](http://preev.com) with 5-minute update interval.
 
-<img src="https://plotti.co/plotticonet" style="width: 570px; height: 190px;"/>
-
-### Current open connections
-
-~~~sh
-#!/bin/bash
-while true; do
-wget -O /dev/null -q http://plotti.co/lock/plotticonn?d=`netstat -tn | wc -l`sockets
-sleep 1
-done
-~~~
-
-<img src="https://plotti.co/plotticonn" style="width: 570px; height: 190px;"/>
+<img src="https://plotti.co/1s2zHX59Wazn" style="width: 570px; height: 190px;"/>
 
 ### More examples
 
-More examples can be found in the [plottico copy-paste snippets portal](https://doc.plotti.co)
+More examples like [linux network load](https://doc.plotti.co/Network-TX-Load-Linux/), [linux open sockets](https://doc.plotti.co/Established-Connections/) and many other integrations like [python feed](https://doc.plotti.co/Python-Snip/) - can be found in the plottico [copy-paste snippets portal](https://doc.plotti.co).
 
 ## Explanation
 
@@ -113,7 +113,7 @@ the format of the request is
 ?d=[value_blue],[value_red],...
 ~~~
 
-Where each `[value_X]` is a separate line drawn on the plot. You may optionally append units as short string to the list or any of the data values to show it as "y" axis units or just as a general message.
+Where each `[value_X]` is a separate line drawn on the plot. You may optionally append units as short string to the list or to any of the data values to show it as "y" axis units or just as a general message.
 
 ### Choosing size
 
@@ -145,20 +145,7 @@ for example, to use color `green` you only provide the 7th input: <a id="yhref2"
 
 ### No OBJECT tag
 
-There are cases where the environment that you use does support images in documents but does not support `object` tags. In case you are allowed to add javascript to documents, here is the snippet that will convert all appropriate `<img>` tags to `<object>`:
-
-~~~js
-window.addEventListener("load", function load(event) {
-window.removeEventListener("load", load, false);
-setInterval(function() { var limg = document.getElementsByTagName("IMG");
-var r = new RegExp("^(http:|https:|)\/\/plotti.co");
-for(var il=0; il<limg.length; il++) { var s = limg[il].getAttribute("src"); if(r.test(s)) {
-var p = limg[il].parentNode; var st = limg[il].getAttribute("style");
-var cl = limg[il].getAttribute("class"); var o = document.createElement("object");
-o.setAttribute("data", s); o.setAttribute("type", "image/svg+xml");
-o.setAttribute("class", cl); o.setAttribute("style", st);
-p.replaceChild(o,limg[il]);}}}, 1000); },false);
-~~~
+There are cases where the environment that you use does support images in documents but does not support `object` tags. In case you are allowed to add javascript to documents, [here](https://doc.plotti.co/Convert-IMG-to-OBJECT/) is the snippet that will convert all relevant `<img>` tags to `<object>`. You can also embed as `iframe` with the same result.
 
 ## Security
 
@@ -166,22 +153,20 @@ p.replaceChild(o,limg[il]);}}}, 1000); },false);
 
 If you want to lock a single host IP address as a feeder of the data so that no other IP can send to your hash - you can use the path `http://plotti.co/lock/YOUR_HASH?d=1,2,3`. After executing this request the sender will be locked for this hash. The hash locks get dropped eventually, so keep using this address to continue holding the lock.
 
-Plottico now also supports `&k=KEY` request parameter to lock to specified key. Key takes preference over IP lock, if this hash was not locked by IP before. Use as `wget -q -O /dev/null "http://plotti.co/YOUR_HASH?d=1,2,3&k=YOUR_KEY"`.
+Alternatively, plottico supports `&k=KEY` request parameter to lock to specified key. Use as `wget -q -O /dev/null "http://plotti.co/YOUR_HASH?d=1,2,3&k=YOUR_KEY"`.
 
-### HTTPS
-
-[plotti.co](https://plotti.co) supports https!
+For all the requests I recommend using encrypted connection using HTTPS.
 
 ## Limitations
 
-- Data feed rate is limited to 50 updates/sec per host. Please request if you need more
 - Your cached data will be deleted after about 1 day of idling (no updates or views)
-- The server is stateless and will drop locks on restart ([fix in progress](https://github.com/grandrew/plotti.co/issues/14))
-- There are some known [bugs](https://github.com/grandrew/plotti.co/issues)
+- The server will drop IP address locks on restart
+- There are some known bugs in [plottico](https://github.com/grandrew/plotti.co/issues) and in [tracker](https://github.com/grandrew/plotticotrack/issues)
 
-## Terms of serve and privacy
+## Terms of service and privacy
 
-The service is provided as-is. Howerver we use our best efforts to make sure the service delivers best possible response times.
+The service is provided as-is. However we use our best efforts to make sure the service delivers best possible response times.
+By using Plottico Tracker Pro you agree to be responsible for any damages to third parties in case of violating their licenses.
 
 There are currenlty no plans to collect any personal information.
 
@@ -189,30 +174,9 @@ These terms are subject to change. Please follow me on [twitter](http://twitter.
 
 ## Pricing
 
-Plotti.co microservice is free of charge; but if you like it and want to continue using on a regular basis please consider donating to support development and service uptime.
+[Plotti.co microservice](https://plotti.co) and [Plotti.co Tracker Pro](https://chrome.google.com/webstore/detail/plottico-tracker-pro/hjfkpgknlchgabgfhknaedgodmnhieep) chrome extension are free of charge; but if you like it and want to continue using on a regular basis please consider donating to support development and service uptime.
 
-The recommended donations are 
-
- - $0.50 per month to show your interest in continued development and features
- - $3 per month if you estimate to have 100 clients watching the stream during the month
- - $10 per month if your data update rate exceeds 1 update/second for your 100 clients
- - $50 per month to ensure high-volume traffic is handled well by [plotti.co](http://plotti.co)
-
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-<input type="hidden" name="cmd" value="_s-xclick">
-<input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----
-">
-<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
-</form>
-
-[plotti.co](http://plotti.co)
-
-## Roadmap
-
-The features on the roadmap include more interaction, more security options, [more types of plots (pie,log,hist,gauges)](https://github.com/grandrew/plotti.co/issues/6), more beauty, etc.
-
-Keep updated with [github](https://github.com/grandrew/plotti.co) issues!
+<a class="coinbase-button" data-code="d38bfd90da7cddefacb5eb3929f8a53c" data-button-style="donation_large" href="https://www.coinbase.com/checkouts/d38bfd90da7cddefacb5eb3929f8a53c">Donate Bitcoins</a><script src="https://www.coinbase.com/assets/button.js" type="text/javascript"></script>
 
 ## Author
 
@@ -220,11 +184,11 @@ Andrew Gryaznov ([in](https://www.linkedin.com/in/grandrew)/[GitHub](http://gith
 
 ![Andrew Gryaznov](https://en.gravatar.com/avatar/c0d7a528fe5e44aad0d1e81e8080db37.jpg?s=200)
 
-You can send any feedback and suggestions to ag@vrayo.com or realgrandrew@gmail.com
+You can send any feedback and suggestions to [ag@vrayo.com](mailto:ag@vrayo.com)
 
 ### License
 
-[AGPLv3 License](http://www.gnu.org/licenses/agpl-3.0.en.html)
+[AGPLv3 License](http://www.gnu.org/licenses/agpl-3.0.en.html) for the [microservice](https://github.com/grandrew/plotti.co) and [GPLv3 License](http://www.gnu.org/licenses/gpl-3.0.en.html) for the [tracker](https://github.com/grandrew/plotticotrack).
 
 <a href="https://github.com/grandrew/plotti.co" class="github-corner"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 
