@@ -277,9 +277,9 @@ function gen_pt(i, ydata, x) {
     this.document.getElementById("valueMid").innerHTML=mid_val+mid_val_ex; 
     var y = parseInt(y_data / this.init_max_y * this.height);
     if(isNaN(y) || isNaN(this.l_y[i])) { 
-        if(this.console) {
-            console.log("Cannot calculate y y_data="+y_data+" init_max_y="+this.init_max_y+" height="+this.height+" ydt="+this.ydata);
-        }
+        // if(this.console) {
+        //     console.log("Cannot calculate y y_data="+y_data+" init_max_y="+this.init_max_y+" height="+this.height+" ydt="+this.ydata);
+        // }
         return false;
     }
     if(0 > y) if (this.trdn == 0) {
