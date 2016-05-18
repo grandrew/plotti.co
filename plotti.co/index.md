@@ -25,10 +25,9 @@ data-layout="button_count" style="display: inline-block;">
 
 <br/>
 
-*Now introducing Plottico Tracker web browser extension*
+*Now introducing Plottico Tracker website-to-website live plotting browser extension*
 
-<object class="image_full" data="https://doc.plotti.co/tracker_intro.svg" type="image/svg+xml" style="overflow: visible; margin-left: -300px;"/>
-<object class="image_mobile" data="https://doc.plotti.co/tracker_intro_mobile.svg" type="image/svg+xml" style="overflow: visible; margin-left: 0px;"/>
+<a href="https://chrome.google.com/webstore/detail/plottico-tracker-pro/hjfkpgknlchgabgfhknaedgodmnhieep"><img src="https://doc.plotti.co/ChromeWebStore.png" style="width: 250px"/></a>
 
 ## Usage
 
