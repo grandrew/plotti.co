@@ -3,9 +3,9 @@ gevent.monkey.patch_all()
 import flask, time, optparse, string, re, signal, marshal, traceback, sys, json, socket
 import math as Math
 from flask import request, abort
-from flask.ext.cache import Cache
+from flask_caching import Cache
 import gevent
-from gevent.wsgi import WSGIServer
+from gevent.pywsgi import WSGIServer
 from gevent.queue import Queue
 from gevent.server import DatagramServer
 
